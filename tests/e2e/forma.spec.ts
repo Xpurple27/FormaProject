@@ -23,10 +23,10 @@ async function signUp(page: Page, request: APIRequestContext, name: string) {
     return messageId;
   }, { timeout: 12000 }).not.toBe("");
   const message = await (await request.get(mailUrl + "/api/v1/message/" + messageId)).json();
-  const confirmation = message.HTML.match(/href="([^"]*\/auth\/confirm\?[^"]+)"/)?.[1];
+  const confirmation = message.HTML.match(/href="([^"]*\/(?:auth\/confirm|(?:auth\/v1\/)?verify)\?[^"]+)"/)?.[1];
   expect(confirmation).toBeTruthy();
   const confirmUrl = new URL(confirmation.replaceAll("&amp;", "&"));
-  await page.goto(confirmUrl.pathname + confirmUrl.search);
+  await page.goto(confirmUrl.href);
   await expect(page).toHaveURL(/\/orientasi$/);
   await page.getByRole("button", { name: "Gunakan profil awal FORMA" }).click();
   await page.getByLabel("Nama panggilan").fill(name);

@@ -32,7 +32,7 @@ Dua sumber tersedia, yaitu `FORMA-MVP.zip` dan `index.html`. HTML mandiri identi
 
 ## Lingkungan verifikasi
 
-Build dijalankan dengan Node 24 dan Next.js 16.4.6. Pengujian browser memakai Chromium headless, server build produksi Next.js, PostgreSQL 17.11, Supabase Auth v2.197.0, PostgREST v16.5, dan Mailpit dalam lingkungan lokal terisolasi. Database uji menggunakan migrasi yang sama dengan paket ini. Pengujian SQL tambahan memakai PGlite. Proyek Supabase hosted khusus FORMA belum tersedia pada akun terhubung, sehingga verifikasi hosted dan deploy masih tertunda.
+Build dijalankan dengan Node 24 dan Next.js 16.4.6. Pengujian browser memakai Chromium headless, server build produksi Next.js, PostgreSQL 17.11, Supabase Auth v2.197.0, PostgREST v16.5, dan Mailpit dalam lingkungan lokal terisolasi. Database uji menggunakan migrasi yang sama dengan paket ini. Pengujian SQL tambahan memakai PGlite. Tiga migrasi yang sama telah diterapkan pada proyek Supabase hosted khusus FORMA.
 
 ## Hasil pengujian
 

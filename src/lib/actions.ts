@@ -28,7 +28,16 @@ export async function authAction(mode: "login" | "signup", _: FormState, form: F
     if (error?.code === "invalid_credentials") return { error: "Email atau kata sandi belum cocok." };
     if (error) return { error: "Gagal masuk. Coba lagi beberapa saat." };
   } else {
-    const { data, error } = await client.auth.signUp({ email, password });
+    const site = process.env.FORMA_SITE_URL;
+    const { data, error } = await client.auth.signUp({
+      email, password, options: site ? { emailRedirectTo: new URL("/auth/confirm", site).href } : undefined,
+    });
+    if (error?.code === "email_address_not_authorized") {
+      return { error: "Gunakan alamat email yang terdaftar di tim Supabase FORMA untuk menerima konfirmasi." };
+    }
+    if (error?.code === "over_email_send_rate_limit") {
+      return { error: "Batas pengiriman email tercapai. Coba lagi nanti." };
+    }
     if (error) return { error: "Pendaftaran belum berhasil. Periksa isian dan coba lagi." };
     if (!data.session) return { message: "Cek email untuk tautan konfirmasi. Setelah mengonfirmasi, kamu bisa masuk." };
   }

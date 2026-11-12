@@ -45,7 +45,7 @@ Suite membuat akun dan catatan uji pada database target. Variabel opsional `FORM
 ## Menyiapkan rilis di Vercel
 
 1. Buat proyek Supabase khusus FORMA. Hubungkan CLI dengan `supabase link --project-ref <ref>`, periksa migrasi dengan `supabase db push --linked --dry-run`, lalu terapkan dengan `supabase db push --linked`.
-2. Di Supabase Auth, aktifkan email dan konfirmasi pendaftaran. Pasang isi `supabase/confirmation.html` sebagai template **Confirm signup**, set Site URL ke origin HTTPS aplikasi, dan siapkan SMTP untuk pengiriman email sebenarnya.
+2. Di Supabase Auth, aktifkan email dan konfirmasi pendaftaran. Atur Site URL ke origin HTTPS aplikasi dan tambahkan URL HTTPS aplikasi dengan path `/auth/confirm` ke Redirect URLs. Template bawaan Supabase memakai PKCE. Jika SMTP sendiri sudah tersedia, template `supabase/confirmation.html` mendukung verifikasi token langsung. Email bawaan Supabase terbatas pada anggota tim proyek.
 3. Impor sumber ke proyek Next.js di Vercel. Isi tiga variabel dari `.env.example` sesuai environment Vercel dan deploy. Jalankan pengujian pada proyek Supabase uji atau staging yang berbeda dari produksi.
 4. Selesaikan daftar rilis di [laporan milestone](docs/MILESTONES.md) dengan alamat deployment yang benar.
 

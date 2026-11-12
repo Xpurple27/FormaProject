@@ -8,10 +8,16 @@ export async function GET(request: Request) {
   const headers = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" };
   const token_hash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type");
-  if (supabaseConfig() && token_hash && (type === "signup" || type === "email")) {
+  const code = url.searchParams.get("code");
+  if (supabaseConfig()) {
     const client = await createClient();
-    const { error } = await client.auth.verifyOtp({ token_hash, type });
-    if (!error) return NextResponse.redirect(new URL("/beranda", base), { headers });
+    if (code) {
+      const { error } = await client.auth.exchangeCodeForSession(code);
+      if (!error) return NextResponse.redirect(new URL("/beranda", base), { headers });
+    } else if (token_hash && (type === "signup" || type === "email")) {
+      const { error } = await client.auth.verifyOtp({ token_hash, type });
+      if (!error) return NextResponse.redirect(new URL("/beranda", base), { headers });
+    }
   }
   return NextResponse.redirect(new URL("/masuk?status=konfirmasi-gagal", base), { headers });
 }
