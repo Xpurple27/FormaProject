@@ -1,0 +1,9 @@
+export function supabaseConfig() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  return url && key ? { url, key } : null;
+}
+
+export function sessionCookieOptions() {
+  return { httpOnly: true, sameSite: "lax" as const, secure: Boolean(process.env.FORMA_SITE_URL?.startsWith("https://")) };
+}
