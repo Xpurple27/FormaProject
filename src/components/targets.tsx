@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { updateTargets } from "@/lib/actions";
+import { updateProgramStart, updateTargets } from "@/lib/actions";
 import { fmt, remainingCarbs } from "@/lib/nutrition";
-import type { Target } from "@/lib/types";
+import type { Nutrients, Target } from "@/lib/types";
 import { Feedback } from "./feedback";
 import { useActionForm } from "./use-action-form";
 
-export const PERSONAL_TARGET = { calories: "2100", protein: "120", fat: "70" };
-export type TargetValues = typeof PERSONAL_TARGET;
+export type TargetValues = { calories: string; protein: string; fat: string };
+const emptyValues: TargetValues = { calories: "", protein: "", fat: "" };
+
+export function targetValues(target: Nutrients | null): TargetValues {
+  return target ? { calories: String(target.calories), protein: String(target.protein_g), fat: String(target.fat_g) } : emptyValues;
+}
 
 export function TargetFields({ values, change }: { values: TargetValues; change: (value: TargetValues) => void }) {
   const calories = Number(values.calories);
@@ -31,14 +35,26 @@ export function TargetFields({ values, change }: { values: TargetValues; change:
   </>;
 }
 
-export function TargetForm({ target }: { target: Target | null }) {
+export function TargetForm({ target, suggestion }: { target: Target | null; suggestion: Nutrients | null }) {
   const { state, pending, form } = useActionForm(updateTargets);
-  const [values, setValues] = useState(target
-    ? { calories: String(target.calories), protein: String(target.protein_g), fat: String(target.fat_g) }
-    : { calories: "", protein: "", fat: "" });
+  const [values, setValues] = useState(() => targetValues(target));
   return <form {...form} className="grid gap-4">
+    {suggestion && <button type="button" className="btn btn-secondary justify-self-start"
+      onClick={() => setValues(targetValues(suggestion))}>Isi dari estimasi profil</button>}
     <TargetFields values={values} change={setValues} />
     <Feedback {...state} />
     <button className="btn btn-primary justify-self-start" disabled={pending}>{pending ? "Menyimpan…" : "Simpan target"}</button>
+  </form>;
+}
+
+export function ProgramStartForm({ date }: { date: string }) {
+  const { state, pending, form } = useActionForm(updateProgramStart);
+  return <form {...form} className="grid gap-3 border-t line pt-4">
+    <label className="label max-w-64">Tanggal mulai program
+      <input type="date" className="field" name="start" defaultValue={date} min="1900-01-01" max="9999-12-31" required />
+    </label>
+    <p className="caption muted">Boleh pilih tanggal lampau atau mendatang. Jurnal bisa dipakai hari ini.</p>
+    <Feedback {...state} />
+    <button className="btn btn-secondary justify-self-start" disabled={pending}>{pending ? "Menyimpan…" : "Simpan tanggal mulai"}</button>
   </form>;
 }

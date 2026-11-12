@@ -34,7 +34,9 @@ function FoodChoices({ items, selected, choose }: { items: Food[]; selected?: st
     {items.map(item => <li key={item.id}>
       <button className="food-option" type="button" onClick={() => choose(item)} aria-pressed={item.id === selected}>
         <span className="min-w-0 break-words"><b className="text-sm">{item.name}</b>
-          <span className="block muted text-xs">{item.preparation} · {fmt(item.calories)} kkal/100 g{item.user_id ? " · Pribadi" : ""}</span></span>
+          <span className="block muted text-xs">{item.preparation} · {item.portion_note && item.serving_g
+            ? `≈ ${fmt(item.calories * item.serving_g / 100, 0)} kkal/${item.serving_label}`
+            : `${fmt(item.calories)} kkal/100 g`}{item.user_id ? " · Pribadi" : ""}</span></span>
         {item.id === selected ? <Check className="shrink-0" size={17} aria-hidden="true" /> : <Plus className="shrink-0" size={16} aria-hidden="true" />}
       </button>
     </li>)}
@@ -51,8 +53,9 @@ export function FoodForm({ initial, recent, preselected, id, ...dates }: DatePro
   const [retry, setRetry] = useState(0);
   const [food, setFood] = useState(preselected);
   const [showCatalog, setShowCatalog] = useState(!preselected);
-  const [unit, setUnit] = useState("gram");
-  const [quantity, setQuantity] = useState("100");
+  const startsWithServing = Boolean(preselected?.portion_note && preselected.serving_g);
+  const [unit, setUnit] = useState(startsWithServing ? "serving" : "gram");
+  const [quantity, setQuantity] = useState(startsWithServing ? "1" : "100");
 
   const search = query.trim();
   const filtered = Boolean(search || category);
@@ -74,14 +77,20 @@ export function FoodForm({ initial, recent, preselected, id, ...dates }: DatePro
   const foods = filtered ? result?.foods ?? [] : initial;
   const grams = servingGrams(Number(quantity), unit === "serving" ? food?.serving_g ?? 0 : 1);
   const canSave = Number.isFinite(grams) && grams >= 0.01 && grams <= 3000;
-  function choose(item: Food) { setFood(item); setUnit("gram"); setQuantity("100"); setShowCatalog(false); }
+  function choose(item: Food) {
+    const hasServing = Boolean(item.portion_note && item.serving_g);
+    setFood(item);
+    setUnit(hasServing ? "serving" : "gram");
+    setQuantity(hasServing ? "1" : "100");
+    setShowCatalog(false);
+  }
 
   return <section id="catat" className="card grid content-start gap-4">
     <div><h2>Catat makanan</h2><p className="muted caption mt-1">Pilih makanan sesuai cara pengolahannya.</p></div>
     {showCatalog && <div className="grid gap-3">
       <label className="label">Cari makanan
         <span className="relative"><Search size={17} className="pointer-events-none absolute left-3 top-3.5 soft" aria-hidden="true" />
-          <input className="field !pl-9" type="search" value={query} maxLength={100} placeholder="Contoh: nasi, tahu, pisang"
+          <input className="field !pl-9" type="search" value={query} maxLength={100} placeholder="Contoh: nasi goreng, dimsum, susu coklat"
             onChange={event => setQuery(event.target.value)} /></span>
       </label>
       <label className="label">Kategori<select className="field" value={category} onChange={event => setCategory(event.target.value)}>
@@ -109,6 +118,7 @@ export function FoodForm({ initial, recent, preselected, id, ...dates }: DatePro
         <p className="caption muted mt-1 break-words">Estimasi · {food.source_url
           ? <a className="underline" href={food.source_url} target="_blank" rel="noreferrer">{food.source}</a> : food.source}</p>
         {food.serving_g && <p className="caption muted">1 {food.serving_label} ≈ {fmt(food.serving_g, 2)} g</p>}
+        {food.portion_note && <p className="caption muted mt-1">{food.portion_note}</p>}
       </div>
       <div className="grid grid-cols-2 gap-3">
         <label className="label">Jumlah<input className="field" name="quantity" type="number" inputMode="decimal" min=".01" max="3000" step=".01" value={quantity}

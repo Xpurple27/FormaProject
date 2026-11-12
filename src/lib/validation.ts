@@ -24,14 +24,14 @@ const validTarget = (input: { calories: number; protein: number; fat: number }) 
 
 export const targets = z.object(targetFields).refine(validTarget);
 export const onboarding = z.object({
-  ...targetFields, name: string(60), age: number(18, 100, 1).pipe(z.number().int()),
+  targetMode: z.enum(["auto", "manual"]), name: string(60), age: number(18, 100, 1).pipe(z.number().int()),
   sex: z.enum(["male", "female"]), height: number(100, 250, 1), weight: number(25, 350, 1),
   milestone: z.union([z.literal("").transform(() => null), number(25, 350, 1)]),
   activity: z.enum(["sedentary", "light", "moderate", "active", "very_active"]),
   goal: z.enum(["recomposition", "maintain", "gain", "track"]),
   equipment: z.enum(["dumbbells", "none", "other"]),
   timezone: z.enum(["Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura"]), start: date,
-}).refine(validTarget);
+});
 
 export const entryFields = {
   id: z.uuid(), date, time: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/),

@@ -21,9 +21,9 @@ Target pengalaman dari handoff adalah pencatatan makanan yang sudah dikenal dala
 | ID handoff | Implementasi |
 | --- | --- |
 | FR-AUTH-001–003 | Supabase Auth email dan kata sandi, konfirmasi email, masuk, keluar, pemulihan sesi lewat cookie |
-| FR-ONB-001–004 | Form data awal, estimasi BMR dan TDEE dengan penjelasan rumus, serta target harian yang bisa disesuaikan |
+| FR-ONB-001–004 | Form data awal, IMT, estimasi BMR dan TDEE, serta target harian otomatis dengan pilihan isi manual |
 | FR-ONB-005 | Tertunda hingga alur latihan memerlukan informasi ini |
-| FR-ONB-006 | Tanggal mulai, berat awal, dan target berat opsional tersimpan di profil. Seri pengukuran masuk fase Progres |
+| FR-ONB-006 | Tanggal mulai, berat awal, dan target berat opsional tersimpan di profil. Tanggal mulai dapat diedit dan bisa mendatang. Seri pengukuran masuk fase Progres |
 | FR-NUT-001–004 | Pencarian nama Indonesia, filter kategori, gram atau porsi jika tersedia, pratinjau energi dan makro, empat kelompok makan |
 | FR-NUT-005–007 | Tanggal/jam manual, riwayat harian, edit, hapus, total dan selisih terhadap target efektif |
 | FR-NUT-008–009 | Makanan kustom privat. Daftar cepat menampilkan hingga lima makanan paling sering dalam 100 catatan terakhir. Frekuensi seri diurutkan menurut pemakaian terbaru |
@@ -33,9 +33,10 @@ Target pengalaman dari handoff adalah pencatatan makanan yang sudah dikenal dala
 
 ### Perilaku yang perlu diketahui
 
-- Saat memasukkan data awal, tombol profil awal mengisi contoh usia 30 tahun, tinggi 170 cm, berat 75 kg, target berat 72 kg, aktivitas ringan, dan target 2.100 kkal. Semua nilai ini dapat diubah sebelum disimpan. Target nutrisi dapat diubah lagi lewat Profil. Baseline lain disimpan sebagai titik awal.
+- Saat memasukkan data awal, tombol profil awal mengisi contoh usia 30 tahun, tinggi 170 cm, berat 75 kg, target berat 72 kg, dan aktivitas ringan. Target nutrisi dihitung dari isian saat ini, lalu dapat diubah lewat Profil. Baseline lain disimpan sebagai titik awal.
 - Untuk target 2.100 kkal, protein 120 g, dan lemak 70 g, karbohidrat yang membuat energi konsisten adalah 247,5 g. Profil menghitung angka ini dari tiga input.
-- Untuk hidangan campuran, bahan dan minyak yang termakan dapat dicatat sebagai entri terpisah, atau pengguna dapat membuat entri pribadi berdasarkan label/estimasi per 100 g. Resep tersimpan, perhitungan resep majemuk, dan resep berulang masuk fase berikutnya.
+- Hidangan campuran di katalog memakai resep acuan per piring, buah, atau gelas. Pengguna dapat menyesuaikan jumlah atau gram, mencatat bahan terpisah, atau membuat makanan pribadi berdasarkan label per 100 g. Resep tersimpan, perhitungan resep majemuk, dan resep berulang masuk fase berikutnya.
+- Jurnal dan target pertama tersedia mulai hari ini ketika program dimulai di masa depan. Mengedit tanggal mulai di Profil mempertahankan tanggal efektif target yang sudah tersimpan.
 - Tanggal jurnal mengikuti WIB, WITA, atau WIT yang dipilih saat onboarding. Pencatatan hari lampau didukung. Sebelum target pertama berlaku, jurnal menampilkan total asupan tanpa sisa target.
 - Jurnal bersumber dari catatan yang tersimpan. Halaman Beranda dan Nutrisi menampilkan keadaan kosong bila tanggal belum memiliki catatan.
 

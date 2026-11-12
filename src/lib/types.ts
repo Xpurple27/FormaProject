@@ -10,7 +10,7 @@ export type Profile = {
 export type Target = Nutrients & { user_id: string; effective_from: string; updated_at: string };
 export type Food = Nutrients & {
   id: string; user_id: string | null; name: string; category: string; preparation: string;
-  serving_label: string | null; serving_g: number | null; source: string; source_url: string | null; created_at: string;
+  serving_label: string | null; serving_g: number | null; portion_note: string | null; source: string; source_url: string | null; created_at: string;
 };
 export type Entry = {
   id: string; user_id: string; food_id: string; consumed_at: string; local_date: string; timezone: string;
@@ -37,7 +37,7 @@ export type Database = {
     Tables: {
       profiles: Table<Profile, Omit<Profile, "created_at" | "user_id">>;
       nutrition_targets: Table<Target, Omit<Target, "carbs_g">>;
-      foods: Table<Food, Omit<Food, "user_id" | "created_at" | "source_url">>;
+      foods: Table<Food, Omit<Food, "user_id" | "created_at" | "source_url" | "portion_note">>;
       food_entries: Table<Entry, EntryInput, Partial<Omit<EntryInput, "id" | "food_id">>>;
     };
     Views: Record<never, never>;

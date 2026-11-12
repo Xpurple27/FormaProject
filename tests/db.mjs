@@ -17,9 +17,9 @@ const setup = async (id) => {
   await query("select set_config('request.jwt.claim.sub', $1, false)", [id]);
 };
 const check = async (name, fn) => { await fn(); console.log("✓ " + name); passed += 1; };
-const onboard = (name, calories = 2100) => query(
-  "select public.complete_onboarding($1,27::smallint,'male',165,90,85.5,'light','recomposition','dumbbells','Asia/Jakarta','2024-01-01',$2,120,70)",
-  [name, calories]);
+const onboard = (name, calories = 2100, start = "2024-01-01") => query(
+  "select public.complete_onboarding($1,27::smallint,'male',165,90,85.5,'light','recomposition','dumbbells','Asia/Jakarta',$3,$2,120,70)",
+  [name, calories, start]);
 const add = (foodId, id = entry) => query(
   "insert into public.food_entries(id,food_id,consumed_at,meal_type,quantity_g) values ($1,$2,'2024-01-01 17:01Z','lunch',200) returning *",
   [id, foodId]);
@@ -37,8 +37,12 @@ try {
   for (const file of (await readdir(migrations)).filter(name => name.endsWith(".sql")).sort()) {
     await db.exec(await readFile(new URL(file, migrations), "utf8"));
   }
-  await check("migrations and eight catalog entries", async () => {
-    assert.equal((await query("select count(*)::int as count from public.foods"))[0].count, 8);
+  await check("migrations and 20 catalog entries with reproducible portion sizes", async () => {
+    assert.equal((await query("select count(*)::int as count from public.foods"))[0].count, 20);
+    const [friedRice] = await query("select serving_g, calories * serving_g / 100 as kcal, portion_note from public.foods where name='Nasi goreng + telur'");
+    assert.equal(Number(friedRice.serving_g), 275);
+    assert.ok(Math.abs(Number(friedRice.kcal) - 464.9) <= .02);
+    assert.match(friedRice.portion_note, /minyak 10 g/);
   });
   await check("atomic onboarding and retry", async () => {
     await setup(userA);
@@ -49,6 +53,19 @@ try {
     await setup(userC);
     await assert.rejects(onboard("C", 1), /check constraint/);
     assert.equal((await query("select * from public.profiles")).length, 0);
+  });
+  await check("future start date and owner-only edits keep the nutrition target active", async () => {
+    await setup(userC);
+    await onboard("C", 2100, "2099-02-01");
+    const [before] = await query("select start_date::text, (select effective_from::text from public.nutrition_targets) as effective_from, (now() at time zone 'Asia/Jakarta')::date::text as today from public.profiles");
+    assert.equal(before.start_date, "2099-02-01");
+    assert.equal(before.effective_from, before.today);
+    await query("update public.profiles set start_date='2099-03-01' where user_id=$1", [userC]);
+    assert.equal((await query("select start_date::text from public.profiles"))[0].start_date, "2099-03-01");
+    assert.equal((await query("select effective_from::text from public.nutrition_targets"))[0].effective_from, before.today);
+    await assert.rejects(query("update public.profiles set name='Altered'"), /permission denied/);
+    await setup(userA);
+    assert.equal((await query("update public.profiles set start_date='2099-04-01' where user_id=$1 returning start_date", [userC])).length, 0);
   });
   await check("stored snapshots and WIB midnight", async () => {
     await setup(userA);

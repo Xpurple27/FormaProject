@@ -16,6 +16,8 @@ erDiagram
 | `20261112161934_foundation.sql` | Profil, target bertanggal efektif, onboarding atomik, RLS |
 | `20261112161935_nutrition.sql` | Katalog dan jurnal, trigger snapshot, kolom gizi terhitung, indeks harian, kebijakan kepemilikan |
 | `20261112162007_food_catalog.sql` | Delapan pangan rujukan dengan kode sumber dan metode pengolahan |
+| `20261112165621_onboarding_targets_and_start_date.sql` | Pisahkan tanggal mulai program dari tanggal efektif target dan izinkan pemilik mengedit tanggal mulai |
+| `20261112165623_everyday_food_catalog.sql` | Dua belas pangan tambahan dengan porsi dan catatan komposisi |
 
 ## Keputusan dan konsekuensi
 
@@ -59,3 +61,26 @@ Satuan dasar adalah 100 g bagian yang dapat dimakan. Berat porsi hanya disediaka
 Rujukan [TKPI Kementerian Kesehatan](https://repository.kemkes.go.id/book/777), [tabel TKPI untuk pencocokan kode](https://anyflip.com/zmbsf/izxk/basic), [USDA beras](https://www.ars.usda.gov/ARSUserFiles/80400535/Data/SR/SR28/reports/sr28fg20.pdf), [USDA telur](https://www.ars.usda.gov/ARSUserFiles/80400535/Data/SR/SR28/reports/sr28fg01.pdf), [USDA pisang](https://www.ars.usda.gov/ARSUserFiles/80400535/Data/SR/SR28/reports/sr28fg09.pdf), [USDA ayam](https://www.ars.usda.gov/ARSUserFiles/80400525/Data/SR27/reports/sr27fg05.pdf).
 
 BMR menggunakan persamaan Mifflin–St Jeor. Pengali aktivitas adalah asumsi produk yang ditampilkan di formulir. [Mifflin et al. 1990](https://pubmed.ncbi.nlm.nih.gov/2305711/).
+
+
+## Target otomatis dan tanggal program
+
+IMT dihitung dari berat dibagi tinggi kuadrat dalam meter. Energi awal menggunakan TDEE dari estimasi Mifflin–St Jeor dan pengali aktivitas. Pilihan menjaga berat dan mencatat memakai TDEE. Untuk turun lemak, penyesuaian awal adalah maksimum 10% atau 300 kkal di bawah TDEE, dengan batas aplikasi 1.500 kkal dan tanpa pengurangan saat IMT di bawah 18,5. Pilihan naik berat memakai tambahan maksimum 10% atau 250 kkal. Untuk TDEE di bawah 1.500 kkal, kalkulator tidak menawarkan target otomatis. Asumsi aplikasi dapat diganti dengan isian manual.
+
+Kalori dibulatkan ke 10 kkal, protein dihitung dari sekitar 25% energi dan lemak dari sekitar 30% energi. Karbohidrat memakai energi tersisa agar target kalori dan makro konsisten. Form otomatis memakai perhitungan yang sama dengan Server Action. Rujukan [IMT CDC](https://www.cdc.gov/bmi/about/index.html), [Mifflin et al.](https://pubmed.ncbi.nlm.nih.gov/2305711/), dan [rentang makro dewasa](https://www.nationalacademies.org/read/10925/chapter/25).
+
+Tanggal mulai program dapat berupa tanggal lampau atau mendatang. Saat onboarding, tanggal efektif target pertama adalah tanggal yang lebih awal antara tanggal mulai dan hari ini di zona waktu profil. Edit tanggal mulai hanya memiliki izin pada kolom tersebut dan baris milik pengguna. Riwayat target dan jurnal mempertahankan tanggalnya.
+
+## Hidangan sehari-hari
+
+Dua belas tambahan katalog mencakup hidangan nasi, roti, camilan dan minuman. SQL menyimpan takaran acuan dalam gram dan menghitung profil per 100 g sebagai rerata berbobot bahan. Porsi komposit memperkirakan berat bahan yang termakan. Variasi resep, porsi dan penyerapan minyak dapat mengubah hasil. Untuk dadar sunti, berat bumbu masuk perkiraan porsi, sedangkan kontribusi gizi bumbu belum dihitung. Roti selai memakai referensi olesan coklat hazelnut. Susu coklat memakai susu coklat cair generik.
+
+| Bahan acuan | Sumber |
+| --- | --- |
+| Nasi matang dan dada ayam panggang | USDA SR28 NDB 20045 dan SR27 NDB 05064 |
+| Telur, ayam tepung, minyak, dan cabai | USDA FDC 171287, 171475, 171411, 170106 |
+| Roti putih, olesan coklat, tepung dan susu coklat | USDA FDC 174924, 168000, 168936, 170879 |
+| Tahu dan tempe goreng | TKPI CP062 dan CP076 |
+| Kecap manis | Contoh label 60 kkal dan 15 g karbo per 20 g |
+
+Rujukan [USDA FoodData Central](https://fdc.nal.usda.gov/), [TKPI](https://repository.kemkes.go.id/book/777), dan [transkripsi label kecap](https://www.aurodigo.com/informasi-bango-kecap-manis).

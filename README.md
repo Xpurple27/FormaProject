@@ -17,7 +17,7 @@ npm run dev
 Isi `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` dari keluaran `supabase status` sebelum menjalankan `npm run dev`. Gunakan publishable key atau anon key lokal. `FORMA_SITE_URL` harus sama dengan alamat aplikasi yang kamu buka, biasanya `http://localhost:3000`. Service-role key tidak diperlukan. Supabase menerapkan migrasi pada inisialisasi database baru. Untuk database lokal yang sudah ada, terapkan migrasi yang tertunda dengan `supabase migration up --local`.
 
 1. Buka `http://localhost:3000`, daftar, lalu ambil tautan konfirmasi di Mailpit lokal, biasanya `http://127.0.0.1:54324`.
-2. Masukkan data awal dan target, atau pakai tombol **Gunakan profil awal FORMA** lalu sesuaikan isian. Penyimpanan terjadi saat kamu mengirim formulir.
+2. Masukkan data awal dan pilih tujuan. FORMA menghitung estimasi target yang dapat kamu edit atau ganti dengan isian manual. Tanggal mulai program boleh dipilih bebas. Penyimpanan terjadi saat kamu mengirim formulir.
 3. Buka **Nutrisi** dan cari **Nasi putih matang**. Catat 200 g untuk hasil referensi 260 kkal. Dari **Kelola catatan**, ubah jumlah, tanggal, jam, atau waktu makan, atau hapus catatan.
 4. Di **Profil**, ubah target, unduh ekspor JSON, atau keluar.
 

@@ -15,7 +15,7 @@ export const ACTIVITIES = {
   very_active: { label: "Sangat aktif", factor: 1.9 },
 } as const;
 export const GOALS = {
-  recomposition: "Rekomposisi tubuh", maintain: "Menjaga berat badan",
+  recomposition: "Turun lemak / rekomposisi", maintain: "Menjaga berat badan",
   gain: "Menambah berat badan", track: "Mencatat kebiasaan makan",
 } as const;
 export const EQUIPMENT = { dumbbells: "Dumbbell", none: "Tanpa alat", other: "Peralatan lain" } as const;
@@ -50,4 +50,28 @@ export function energyEstimate(weight: number, height: number, age: number,
   sex: Profile["sex_for_bmr"], activity: Profile["activity_level"]) {
   const bmr = 10 * weight + 6.25 * height - 5 * age + (sex === "male" ? 5 : -161);
   return { bmr, tdee: bmr * ACTIVITIES[activity].factor };
+}
+
+export function bodyMassIndex(weight: number, heightCm: number) {
+  return weight / (heightCm / 100) ** 2;
+}
+
+export function recommendNutrition(input: {
+  weight: number; height: number; age: number; sex: Profile["sex_for_bmr"];
+  activity: Profile["activity_level"]; goal: Profile["goal"];
+}): Nutrients | null {
+  const { weight, height, age, sex, activity, goal } = input;
+  const { tdee } = energyEstimate(weight, height, age, sex, activity);
+  if (!Number.isFinite(tdee) || tdee < 1500) return null;
+
+  let adjustment = 0;
+  if (goal === "recomposition" && bodyMassIndex(weight, height) >= 18.5) {
+    adjustment = -Math.min(300, tdee * 0.1, tdee - 1500);
+  }
+  if (goal === "gain") adjustment = Math.min(250, tdee * 0.1);
+
+  const calories = Math.round((tdee + adjustment) / 10) * 10;
+  const protein_g = Math.round(calories * 0.25 / 4);
+  const fat_g = Math.round(calories * 0.30 / 9);
+  return { calories, protein_g, fat_g, carbs_g: remainingCarbs(calories, protein_g, fat_g) };
 }

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { CATEGORIES, servingGrams } from "./nutrition";
+import { CATEGORIES, recommendNutrition, servingGrams } from "./nutrition";
 import { localNow, toInstant } from "./dates";
 import { findFoods } from "./data";
 import { createClient, getSession, requireProfile, requireSession } from "./supabase/server";
@@ -55,15 +55,24 @@ export async function signOut(_: FormState, _form: FormData): Promise<FormState>
 
 export async function completeOnboarding(_: FormState, form: FormData): Promise<FormState> {
   const { client } = await requireSession();
-  const result = schemas.onboarding.safeParse(Object.fromEntries(form));
-  if (!result.success) return { error: "Periksa profil dan pastikan kalori cukup untuk target protein dan lemak." };
+  const payload = Object.fromEntries(form);
+  const result = schemas.onboarding.safeParse(payload);
+  if (!result.success) return { error: "Periksa data awal dan tanggal mulai." };
   const x = result.data;
-  if (x.start > localNow(x.timezone).date) return { error: "Tanggal mulai maksimal hari ini." };
+  let target;
+  if (x.targetMode === "manual") {
+    const manual = schemas.targets.safeParse(payload);
+    if (!manual.success) return { error: "Periksa target manual. Kalori harus cukup untuk protein dan lemak." };
+    target = { calories: manual.data.calories, protein_g: manual.data.protein, fat_g: manual.data.fat };
+  } else {
+    target = recommendNutrition(x);
+    if (!target) return { error: "Estimasi belum tersedia untuk data ini. Periksa data tubuh atau pilih target manual." };
+  }
   const { error } = await client.rpc("complete_onboarding", {
     p_name: x.name, p_age: x.age, p_sex: x.sex, p_height: x.height,
     p_weight: x.weight, p_milestone: x.milestone, p_activity: x.activity, p_goal: x.goal,
     p_equipment: x.equipment, p_timezone: x.timezone, p_start: x.start,
-    p_calories: x.calories, p_protein: x.protein, p_fat: x.fat,
+    p_calories: target.calories, p_protein: target.protein_g, p_fat: target.fat_g,
   });
   if (error) return saveError;
   revalidatePath("/", "layout");
@@ -84,6 +93,17 @@ export async function updateTargets(_: FormState, form: FormData): Promise<FormS
   revalidatePath("/beranda");
   revalidatePath("/nutrisi");
   redirect("/profil?target=tersimpan");
+}
+
+export async function updateProgramStart(_: FormState, form: FormData): Promise<FormState> {
+  const { client, userId } = await requireProfile();
+  const parsed = schemas.date.safeParse(form.get("start"));
+  if (!parsed.success) return { error: "Pilih tanggal mulai yang valid." };
+  const { data, error } = await client.from("profiles").update({ start_date: parsed.data })
+    .eq("user_id", userId).select("user_id").maybeSingle();
+  if (error || !data) return saveError;
+  revalidatePath("/profil");
+  redirect("/profil?mulai=tersimpan");
 }
 
 const searchSchema = z.object({

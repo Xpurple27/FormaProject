@@ -30,7 +30,9 @@ async function signUp(page: Page, request: APIRequestContext, name: string) {
   await expect(page).toHaveURL(/\/orientasi$/);
   await page.getByRole("button", { name: "Gunakan profil awal FORMA" }).click();
   await page.getByLabel("Nama panggilan").fill(name);
-  await expect(page.getByText("247,5 g", { exact: true })).toBeVisible();
+  await page.getByLabel("Tanggal mulai program", { exact: true }).fill("2099-02-01");
+  await expect(page.getByText("230,75 g", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Kalori (kkal)")).toHaveCount(0);
   await page.getByRole("button", { name: "Simpan profil dan target" }).click();
   await expect(page.getByRole("heading", { name: "Halo, " + name + "." })).toBeVisible();
   return email;
@@ -90,6 +92,11 @@ test("email confirmation, onboarding, rice CRUD, cross-session persistence and p
   await expect(page.getByTestId("total-calories")).toHaveText("0");
 
   await page.getByRole("link", { name: "Profil", exact: true }).click();
+  await expect(page.getByLabel("Kalori (kkal)")).toHaveValue("2060");
+  await page.getByLabel("Tanggal mulai program").fill("2099-02-02");
+  await page.getByRole("button", { name: "Simpan tanggal mulai" }).click();
+  await expect(page.getByText("Tanggal mulai tersimpan.")).toBeVisible();
+  await expect(page.getByLabel("Kalori (kkal)")).toHaveValue("2060");
   await page.getByLabel("Kalori (kkal)").fill("100");
   await page.getByRole("button", { name: "Simpan target" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Kalori harus cukup" })).toBeVisible();
@@ -103,7 +110,8 @@ test("email confirmation, onboarding, rice CRUD, cross-session persistence and p
   expect(response.headers()["content-disposition"]).toMatch(/attachment/);
   const json = await response.json();
   expect(json.entries).toEqual([expect.objectContaining({ local_date: previousDay, quantity_g: 150, calories_snapshot: 195 })]);
-  expect(json.targets.at(-1).carbs_g).toBe(272.5);
+  expect(json.profile.start_date).toBe("2099-02-02");
+  expect(json.targets.at(-1).carbs_g).toBe(265.75);
   await page.getByRole("button", { name: "Keluar dari akun" }).click();
   await expect(page).toHaveURL(/\/masuk$/);
 
@@ -134,6 +142,14 @@ test("custom food, serving conversion, frequent foods, and isolation of two user
   await page.getByRole("combobox", { name: "Kategori", exact: true }).selectOption("lauk");
   await expect(page.getByRole("button", { name: /Tahu goreng/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /Nasi putih matang/ })).toHaveCount(0);
+  await page.getByRole("combobox", { name: "Kategori", exact: true }).selectOption("");
+  await page.getByLabel("Cari makanan").fill("nasi goreng telur");
+  await page.getByRole("button", { name: /Nasi goreng \+ telur/ }).click();
+  const recipe = page.getByRole("form", { name: "Tambah catatan makanan" });
+  await expect(recipe.getByLabel("Satuan")).toHaveValue("serving");
+  await expect(recipe.getByLabel("Jumlah")).toHaveValue("1");
+  await expect(recipe.getByText(/minyak 10 g/)).toBeVisible();
+  await expect(recipe.getByText("464,89 kkal", { exact: true })).toBeVisible();
   await page.getByText("Buat makanan sendiri", { exact: true }).click();
   const privateName = "Camilan pribadi QA";
   await page.getByLabel("Nama makanan").fill(privateName);

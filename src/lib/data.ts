@@ -33,8 +33,8 @@ export async function getTarget(client: Client, userId: string, day: string): Pr
 
 export async function findFoods(client: Client, search: string, category: string) {
   let query = client.from("foods").select("*").order("name").order("id").limit(30);
-  if (search) {
-    const escaped = search.replace(/[\\%_]/g, "\\$&");
+  for (const term of search.split(/[\s+]+/).filter(Boolean).slice(0, 8)) {
+    const escaped = term.replace(/[\\%_]/g, "\\$&");
     query = query.ilike("name", "%" + escaped + "%");
   }
   if (category) query = query.eq("category", category);

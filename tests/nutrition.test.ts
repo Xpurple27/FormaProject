@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dayOffset, localNow, toInstant, validDate } from "../src/lib/dates";
-import { energyEstimate, remainingCarbs, scaleNutrition, servingGrams, sumEntries } from "../src/lib/nutrition";
+import { bodyMassIndex, energyEstimate, recommendNutrition, remainingCarbs, scaleNutrition, servingGrams, sumEntries } from "../src/lib/nutrition";
 import { customFood, newEntry, targets } from "../src/lib/validation";
 import type { Entry } from "../src/lib/types";
 
@@ -22,6 +22,16 @@ describe("nutrition", () => {
     expect(remainingCarbs(2100, 120, 70)).toBe(247.5);
     expect(remainingCarbs(5.2, .4, .4)).toBe(0);
     expect(remainingCarbs(500, 120, 70)).toBeLessThan(0);
+  });
+  it("estimates balanced targets using activity and goal as well as body measurements", () => {
+    const body = { weight: 75, height: 170, age: 30, sex: "male", activity: "light", goal: "recomposition" } as const;
+    expect(bodyMassIndex(body.weight, body.height)).toBeCloseTo(25.95, 2);
+    expect(recommendNutrition(body)).toEqual({ calories: 2060, protein_g: 129, fat_g: 69, carbs_g: 230.75 });
+    expect(recommendNutrition({ ...body, activity: "moderate" })?.calories).toBeGreaterThan(2060);
+    expect(recommendNutrition({ ...body, goal: "maintain" })?.calories).toBe(2290);
+    expect(recommendNutrition({ ...body, weight: 50, activity: "moderate" }))
+      .toEqual(recommendNutrition({ ...body, weight: 50, activity: "moderate", goal: "maintain" }));
+    expect(recommendNutrition({ ...body, weight: 25, age: 90, height: 100 })).toBeNull();
   });
   it("reproduces the handoff energy estimate", () => {
     const { bmr, tdee } = energyEstimate(90, 165, 27, "male", "light");
