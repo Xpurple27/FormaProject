@@ -1,6 +1,6 @@
 # FORMA
 
-FORMA adalah jurnal nutrisi personal dengan antarmuka Bahasa Indonesia. Versi 0.1.0 mencakup fondasi akun dan Nutrition Tracker. Status fitur, pengujian, dan pekerjaan berikutnya ada di [laporan milestone](docs/MILESTONES.md).
+FORMA adalah jurnal nutrisi personal dengan antarmuka Bahasa Indonesia. Versi ini mencakup akun, jurnal nutrisi, Workout A/B dan progres 12 minggu. Status fitur, pengujian, dan pekerjaan berikutnya ada di [laporan milestone](docs/MILESTONES.md).
 
 ## Menjalankan secara lokal
 
@@ -19,7 +19,9 @@ Isi `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` dari k
 1. Buka `http://localhost:3000`, daftar, lalu ambil tautan konfirmasi di Mailpit lokal, biasanya `http://127.0.0.1:54324`.
 2. Masukkan data awal dan pilih tujuan. FORMA menghitung estimasi target yang dapat kamu edit atau ganti dengan isian manual. Tanggal mulai program boleh dipilih bebas. Penyimpanan terjadi saat kamu mengirim formulir.
 3. Buka **Nutrisi** dan cari **Nasi putih matang**. Catat 200 g untuk hasil referensi 260 kkal. Dari **Kelola catatan**, ubah jumlah, tanggal, jam, atau waktu makan, atau hapus catatan.
-4. Di **Profil**, ubah target, unduh ekspor JSON, atau keluar.
+4. Di **Latihan**, atur hari latihan, mulai Workout A/B, catat set, dan selesaikan sesi untuk memasukkannya ke riwayat.
+5. Di **Progres**, catat berat atau lingkar pinggang. Grafik, perbandingan set, dan ringkasan mingguan terbentuk dari data yang tersimpan. Galeri foto bersifat privat.
+6. Di **Profil**, ubah target atau tanggal program, unduh ekspor JSON, atau keluar.
 
 Jika dependensi Supabase belum disetel, halaman masuk memberi petunjuk penyiapan. FORMA membutuhkan koneksi untuk membaca dan menulis jurnal.
 

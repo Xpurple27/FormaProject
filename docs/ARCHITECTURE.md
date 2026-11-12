@@ -18,6 +18,8 @@ erDiagram
 | `20261112162007_food_catalog.sql` | Delapan pangan rujukan dengan kode sumber dan metode pengolahan |
 | `20261112165621_onboarding_targets_and_start_date.sql` | Pisahkan tanggal mulai program dari tanggal efektif target dan izinkan pemilik mengedit tanggal mulai |
 | `20261112165623_everyday_food_catalog.sql` | Dua belas pangan tambahan dengan porsi dan catatan komposisi |
+| `20261112174411_workout_and_progress.sql` | Jadwal, sesi, set, pengukuran, penguncian sesi dan RLS |
+| `20261112174414_progress_photo_storage.sql` | Bucket foto privat dan akses menurut pemilik folder |
 
 ## Keputusan dan konsekuensi
 
@@ -84,3 +86,23 @@ Dua belas tambahan katalog mencakup hidangan nasi, roti, camilan dan minuman. SQ
 | Kecap manis | Contoh label 60 kkal dan 15 g karbo per 20 g |
 
 Rujukan [USDA FoodData Central](https://fdc.nal.usda.gov/), [TKPI](https://repository.kemkes.go.id/book/777), dan [transkripsi label kecap](https://www.aurodigo.com/informasi-bango-kecap-manis).
+
+
+## Latihan dan progres
+
+Dua rutinitas A/B memakai katalog gerakan berversi di source. Sesi menyimpan urutan gerakan aktual, minggu pada saat mulai, set yang direncanakan, status, dan waktu aktif. Set tersimpan sebagai baris terpisah dengan kunci sesi, slot, dan nomor set. Constraint satu sesi terbuka per pengguna, penguncian baris induk saat menyimpan set, dan pemeriksaan transisi melindungi sesi dari kiriman ganda dan edit riwayat selesai. Beban dicatat per alat. Gerakan satu sisi memakai jumlah repetisi yang dapat diselesaikan di kedua sisi.
+
+Jadwal memakai tanggal mulai profil dan zona waktu lokal. Minggu 1–2 menggunakan maksimal dua hari yang dipilih. Minggu 3–12 menyediakan hingga tiga hari. Mulai minggu 5 pengguna boleh memilih dua atau tiga set. Pemilihan beban tetap manual. Perbandingan kekuatan membandingkan set terbaik dari dua sesi terbaru dengan gerakan yang sama. Ilustrasi adalah skema asli FORMA. Prinsip latihan dan petunjuk dirujuk dari [ACSM](https://pubmed.ncbi.nlm.nih.gov/41843416/), [Mayo Clinic squat](https://www.mayoclinic.org/healthy-lifestyle/fitness/multimedia/squat/vid-20084682), [row](https://www.mayoclinic.org/healthy-lifestyle/fitness/multimedia/bent-over-row/vid-20084680), dan [curl](https://www.mayoclinic.org/healthy-lifestyle/fitness/multimedia/biceps-curl/vid-20084675).
+
+Setiap tanggal pengukuran menyimpan berat, lingkar pinggang, atau keduanya. Grafik memakai tanggal aktual dan mengabaikan nilai yang kosong. Minggu program dihitung dari tanggal mulai dan rerata memakai pengukuran yang tersedia. Berat awal dan target adalah nilai profil. Ukuran pinggang mengikuti metode [American Heart Association](https://www.heart.org/-/media/PHD-Files/Education/CKMH-Obesity-Measuring-Waist-Circumference_030226.pdf).
+
+Foto masuk ke bucket privat `progress-photos` dengan prefiks ID akun. Aplikasi mengubah JPG, PNG, atau WebP ke JPEG dan menghapus metadata gambar sebelum unggah. Akses baca foto melalui rute autentikasi dengan cache privat. Ekspor JSON mencakup metadata galeri. Foto dapat dibuka dan diunduh satu per satu.
+
+```mermaid
+erDiagram
+  PROFILES ||--o| WORKOUT_PREFERENCES : memilih
+  PROFILES ||--o{ WORKOUT_SESSIONS : mencatat
+  WORKOUT_SESSIONS ||--o{ WORKOUT_SETS : memuat
+  PROFILES ||--o{ BODY_MEASUREMENTS : mencatat
+  PROFILES ||--o{ PROGRESS_PHOTOS : memiliki
+```

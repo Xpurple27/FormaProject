@@ -1,3 +1,5 @@
+import type { ExerciseId, Routine } from "./workout";
+
 export type Nutrients = { calories: number; protein_g: number; carbs_g: number; fat_g: number };
 
 export type Profile = {
@@ -21,6 +23,24 @@ export type Entry = {
   created_at: string; updated_at: string;
 };
 
+export type WorkoutPreference = { user_id: string; weekdays: number[] };
+export type WorkoutSession = {
+  id: string; user_id: string; routine: Routine; program_week: number | null; local_date: string;
+  exercise_ids: ExerciseId[]; skipped_slots: number[]; prescribed_sets: number;
+  status: "active" | "paused" | "completed" | "cancelled";
+  started_at: string; active_since: string | null; finished_at: string | null; elapsed_seconds: number;
+};
+export type WorkoutSet = {
+  user_id: string; session_id: string; slot: number; set_number: number; exercise_id: ExerciseId;
+  amount: number; load_kg: number | null; recorded_at: string;
+};
+export type Measurement = {
+  user_id: string; measured_date: string; weight_kg: number | null; waist_cm: number | null; notes: string; updated_at: string;
+};
+type WorkoutStart = Pick<WorkoutSession, "id" | "routine" | "program_week" | "local_date" | "exercise_ids" | "prescribed_sets">;
+type WorkoutSetInput = Omit<WorkoutSet, "recorded_at">;
+type MeasurementInput = Omit<Measurement, "updated_at">;
+
 type Table<Row, Insert, Update = Partial<Insert>> = {
   Row: Row; Insert: Insert; Update: Update; Relationships: [];
 };
@@ -39,9 +59,16 @@ export type Database = {
       nutrition_targets: Table<Target, Omit<Target, "carbs_g">>;
       foods: Table<Food, Omit<Food, "user_id" | "created_at" | "source_url" | "portion_note">>;
       food_entries: Table<Entry, EntryInput, Partial<Omit<EntryInput, "id" | "food_id">>>;
+      workout_preferences: Table<WorkoutPreference, WorkoutPreference>;
+      workout_sessions: Table<WorkoutSession, WorkoutStart>;
+      workout_sets: Table<WorkoutSet, WorkoutSetInput>;
+      body_measurements: Table<Measurement, MeasurementInput>;
     };
     Views: Record<never, never>;
-    Functions: { complete_onboarding: { Args: OnboardingArgs; Returns: undefined } };
+    Functions: {
+      complete_onboarding: { Args: OnboardingArgs; Returns: undefined };
+      change_workout: { Args: { p_id: string; p_action: string; p_slot?: number; p_exercise?: string }; Returns: undefined };
+    };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;
   };

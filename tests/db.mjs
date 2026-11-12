@@ -32,6 +32,14 @@ try {
     grant usage on schema auth to anon, authenticated;
     create function auth.uid() returns uuid language sql stable as
       $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+    create schema storage;
+    create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
+    create table storage.objects(bucket_id text, name text, primary key(bucket_id,name));
+    create function storage.foldername(name text) returns text[] language sql immutable as
+      $$ select (string_to_array(name,'/'))[1:cardinality(string_to_array(name,'/'))-1] $$;
+    grant usage on schema storage to anon, authenticated;
+    grant select, insert, delete on storage.objects to authenticated;
+    alter table storage.objects enable row level security;
     insert into auth.users values ('${userA}'), ('${userB}'), ('${userC}');
   `);
   for (const file of (await readdir(migrations)).filter(name => name.endsWith(".sql")).sort()) {
@@ -107,6 +115,54 @@ try {
     await assert.rejects(onboard("Anonymous"), /permission denied/);
     await setup(userA);
     assert.equal((await query("delete from public.food_entries where id=$1 returning id", [entry])).length, 1);
+  });
+  await check("workout lifecycle, set deduplication and cross-user isolation", async () => {
+    await setup(userA);
+    const id = crypto.randomUUID();
+    const open = (session) => query("insert into public.workout_sessions(id,routine,local_date,exercise_ids,prescribed_sets) values ($1,'A','2024-01-01',array['goblet-squat','floor-press','dumbbell-row','plank'],2)", [session]);
+    const log = (reps) => query("insert into public.workout_sets(session_id,slot,set_number,exercise_id,amount,load_kg) values ($1,1,1,'goblet-squat',$2,4) on conflict(session_id,slot,set_number) do update set amount=excluded.amount", [id, reps]);
+    const transition = (action) => query("select public.change_workout($1,$2)", [id, action]);
+    await open(id);
+    await assert.rejects(open(crypto.randomUUID()), /duplicate key/);
+    await assert.rejects(transition("finish"), /at least one set/);
+    await log(8);
+    await log(10);
+    assert.deepEqual((await query("select amount from public.workout_sets where session_id=$1", [id])).map(row => row.amount), [10]);
+    await transition("pause");
+    await assert.rejects(log(9), /not active/);
+    await transition("resume");
+    await transition("finish");
+    await assert.rejects(log(9), /not active/);
+    assert.equal((await query("select status from public.workout_sessions where id=$1", [id]))[0].status, "completed");
+    await setup(userB);
+    assert.equal((await query("select * from public.workout_sessions where id=$1", [id])).length, 0);
+    assert.equal((await query("select * from public.workout_sets where session_id=$1", [id])).length, 0);
+    await assert.rejects(transition("resume"), /Session is closed/);
+    await assert.rejects(log(8), /not active/);
+  });
+  await check("measurement date and ownership, including missing weight", async () => {
+    await setup(userA);
+    await query("insert into public.body_measurements(measured_date,waist_cm) values ('2024-01-02',100)");
+    await assert.rejects(query("insert into public.body_measurements(measured_date,weight_kg) values ('2099-01-01',90)"), /future/);
+    await assert.rejects(query("insert into public.body_measurements(measured_date) values ('2024-01-03')"), /check constraint/);
+    assert.equal((await query("select weight_kg from public.body_measurements"))[0].weight_kg, null);
+    await setup(userB);
+    assert.equal((await query("select * from public.body_measurements where user_id=$1", [userA])).length, 0);
+    assert.equal((await query("delete from public.body_measurements where user_id=$1 returning measured_date", [userA])).length, 0);
+  });
+  await check("private photo policies restrict list, upload and deletion to the folder owner", async () => {
+    const file = userA + "/2024-01-02_" + crypto.randomUUID() + ".jpg";
+    await setup(userA);
+    await query("insert into storage.objects values ('progress-photos',$1)", [file]);
+    assert.equal((await query("select * from storage.objects")).length, 1);
+    await setup(userB);
+    assert.equal((await query("select * from storage.objects")).length, 0);
+    await assert.rejects(query("insert into storage.objects values ('progress-photos',$1)", [file]), /row-level security/);
+    assert.equal((await query("delete from storage.objects where name=$1 returning name", [file])).length, 0);
+    await db.exec("reset role; set role anon");
+    await assert.rejects(query("select * from storage.objects"), /permission denied/);
+    await setup(userA);
+    assert.equal((await query("delete from storage.objects where name=$1 returning name", [file])).length, 1);
   });
   console.log(passed + " database scenarios passed");
 } finally {

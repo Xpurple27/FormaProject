@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Utensils, UserRound } from "lucide-react";
+import { ChartNoAxesCombined, Dumbbell, House, Utensils, UserRound } from "lucide-react";
 
 const destinations = [
   { path: "/beranda", title: "Beranda", icon: House },
   { path: "/nutrisi", title: "Nutrisi", icon: Utensils },
+  { path: "/latihan", title: "Latihan", icon: Dumbbell },
+  { path: "/progres", title: "Progres", icon: ChartNoAxesCombined },
   { path: "/profil", title: "Profil", icon: UserRound },
 ];
 

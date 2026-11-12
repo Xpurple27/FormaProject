@@ -3,11 +3,13 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
 import AxeBuilder from "@axe-core/playwright";
 import { createClient } from "@supabase/supabase-js";
 
+import { dayOffset, localNow } from "../../src/lib/dates";
+
 const password = "Forma-test-only-42!";
 const riceId = "c160fc45-670c-46bd-a521-6dd2d054ec09";
 const mailUrl = process.env.FORMA_TEST_MAIL_URL ?? "http://127.0.0.1:54324";
 
-async function signUp(page: Page, request: APIRequestContext, name: string) {
+async function signUp(page: Page, request: APIRequestContext, name: string, start = "2099-02-01") {
   const email = "forma-" + randomUUID() + "@example.com";
   await page.goto("/daftar");
   await page.getByLabel("Email", { exact: true }).fill(email);
@@ -30,7 +32,7 @@ async function signUp(page: Page, request: APIRequestContext, name: string) {
   await expect(page).toHaveURL(/\/orientasi$/);
   await page.getByRole("button", { name: "Gunakan profil awal FORMA" }).click();
   await page.getByLabel("Nama panggilan").fill(name);
-  await page.getByLabel("Tanggal mulai program", { exact: true }).fill("2099-02-01");
+  await page.getByLabel("Tanggal mulai program", { exact: true }).fill(start);
   await expect(page.getByText("230,75 g", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Kalori (kkal)")).toHaveCount(0);
   await page.getByRole("button", { name: "Simpan profil dan target" }).click();
@@ -204,4 +206,91 @@ test("custom food, serving conversion, frequent foods, and isolation of two user
   } finally {
     await contextB.close();
   }
+});
+
+test("Workout A and B session, measured trends and a private progress photo", async ({ page, request, browser }) => {
+  const today = localNow("Asia/Jakarta").date;
+  const yesterday = dayOffset(today, -1);
+  await signUp(page, request, "Latihan Uji", yesterday);
+
+  await page.goto("/latihan");
+  await expect(page.getByRole("heading", { name: "Latihan", exact: true })).toBeVisible();
+  await expect(page.getByText("Minggu 1 dari 12")).toBeVisible();
+  await page.getByLabel("Sab", { exact: true }).uncheck();
+  await page.getByRole("button", { name: "Simpan jadwal" }).click();
+  await expect(page.getByText("Jadwal latihan tersimpan.")).toBeVisible();
+  await page.getByRole("button", { name: "Mulai latihan", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Workout A", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "60 dtk" }).click();
+  await expect(page.getByRole("timer")).toBeVisible();
+  const first = page.getByRole("form", { name: "Set 1", exact: true });
+  await first.getByLabel("Repetisi", { exact: true }).fill("10");
+  await first.getByLabel("Beban per alat (kg)").fill("4");
+  await first.getByRole("button", { name: "Tandai set selesai" }).click();
+  await expect(first.getByText("Tercatat", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(first.getByLabel("Repetisi", { exact: true })).toHaveValue("10");
+  await page.getByRole("button", { name: "Jeda sesi", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Lanjutkan sesi" })).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Lanjutkan sesi" }).click();
+  await expect(first.getByText("Tercatat", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Gerakan berikutnya" }).click();
+  await page.getByText("Teknik dan pilihan gerakan", { exact: true }).click();
+  await page.getByRole("button", { name: "Ganti ke Push-up dinding" }).click();
+  await expect(page.getByRole("heading", { name: "Push-up dinding", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Selesaikan sesi" }).click();
+  await expect(page.getByText("Sesi selesai dan tercatat di riwayat.")).toBeVisible();
+  await expect(page.getByLabel("Pilih workout")).toHaveValue("B");
+  await page.getByRole("button", { name: "Mulai latihan", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Workout B", exact: true })).toBeVisible();
+  const bSet = page.getByRole("form", { name: "Set 1", exact: true });
+  await bSet.getByLabel("Repetisi", { exact: true }).fill("8");
+  await bSet.getByRole("button", { name: "Tandai set selesai" }).click();
+  await expect(bSet.getByText("Tercatat", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Selesaikan sesi" }).click();
+  await expect(page.getByText("Sesi selesai dan tercatat di riwayat.")).toBeVisible();
+
+  await page.goto("/progres");
+  await expect(page.getByRole("heading", { name: "Progres", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Goblet squat", exact: true })).toBeVisible();
+  await expect(page.getByText("Terakhir · 4 kg/alat · 10 rep")).toBeVisible();
+  await page.getByLabel("Tanggal pengukuran").fill(yesterday);
+  await page.getByLabel("Berat (kg)", { exact: true }).fill("76");
+  await page.getByRole("button", { name: "Simpan pengukuran" }).click();
+  await expect(page.getByText("Pengukuran tersimpan.")).toBeVisible();
+  await expect(page.getByLabel("Tanggal pengukuran")).toHaveValue(today);
+  await page.getByLabel("Berat (kg)", { exact: true }).fill("74");
+  await page.getByLabel("Lingkar pinggang (cm)").fill("98");
+  await page.getByRole("button", { name: "Simpan pengukuran" }).click();
+  await expect(page.getByRole("img", { name: /Grafik Berat badan/ })).toBeVisible();
+  await expect(page.getByRole("img", { name: /Grafik Lingkar pinggang/ })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "75 kg", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "98 cm", exact: true })).toBeVisible();
+
+  await page.getByLabel("Foto (JPG, PNG, atau WebP)").setInputFiles("public/forma.png");
+  await page.getByRole("button", { name: "Simpan foto", exact: true }).click();
+  await expect(page.getByText("Foto tersimpan di galeri privat.")).toBeVisible();
+  const image = page.getByRole("img", { name: /^Foto progres/ });
+  await expect(image).toBeVisible();
+  const src = (await image.getAttribute("src"))!;
+  expect((await page.request.get(src)).status()).toBe(200);
+  const unauth = await browser.newContext({ baseURL: new URL(page.url()).origin });
+  try {
+    expect((await unauth.request.get(src)).status()).toBe(404);
+  } finally {
+    await unauth.close();
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const json = await (await page.request.get("/api/ekspor")).json();
+  expect(json.workoutSessions).toHaveLength(2);
+  expect(json.workoutSessions.every((session: { status: string }) => session.status === "completed")).toBe(true);
+  expect(json.workoutSets).toHaveLength(2);
+  expect(json.bodyMeasurements).toHaveLength(2);
+  expect(json.progressPhotos).toHaveLength(1);
+
+  await page.getByText("Hapus foto", { exact: true }).click();
+  await page.getByRole("button", { name: "Ya, hapus foto" }).click();
+  await expect(page.getByText("Foto dihapus.", { exact: true })).toBeVisible();
+  expect((await page.request.get(src)).status()).toBe(404);
 });

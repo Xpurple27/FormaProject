@@ -52,10 +52,25 @@ Build dijalankan dengan Node 24 dan Next.js 16.4.6. Pengujian browser memakai Ch
 - [x] Validasi kalkulasi, autentikasi, operasi jurnal, dan isolasi dua akun dalam pengujian otomatis.
 - [ ] Siapkan proyek Supabase khusus FORMA, SMTP dan origin HTTPS. Jalankan migrasi serta cek skema dan hak akses di staging.
 - [ ] Uji konfirmasi email hosted, sesi setelah refresh, dan penyimpanan dari ponsel fisik. Ukur waktu pencatatan makanan yang sering dipakai.
-- [ ] Lanjutkan ke library gerakan, program Dumbbell A/B, dan penyimpanan set latihan.
-- [ ] Tambahkan Progres, pengingat dan PWA. Verifikasi instalasi dan perilaku tanpa koneksi.
+- [x] Library gerakan, program Dumbbell A/B, dan penyimpanan set latihan.
+- [x] Progres tubuh, kekuatan, dan galeri privat.
+- [ ] Tambahkan pengingat dan PWA. Verifikasi instalasi dan perilaku tanpa koneksi.
 - [ ] Selesaikan pemulihan akun dan penghapusan akun mandiri sebelum rilis umum.
 
 ## Batasan versi ini
 
-Aplikasi membutuhkan koneksi. Baseline dan zona waktu disetel saat onboarding, sedangkan target nutrisi bisa diperbarui lewat Profil. Porsi hanya muncul pada makanan dengan definisi gram. Impor dari prototype, resep tersimpan, program latihan, pengukuran, pengingat, dan PWA berada pada backlog.
+Aplikasi membutuhkan koneksi. Baseline dan zona waktu disetel saat onboarding, sedangkan target nutrisi bisa diperbarui lewat Profil. Porsi hanya muncul pada makanan dengan definisi gram. Impor dari prototype, resep tersimpan, pengingat, dan PWA berada pada backlog.
+
+
+## 3 · Workout A/B
+
+- Jadwal 12 minggu mengikuti tanggal program dan hari yang dipilih pengguna. Satu sesi aktif per akun dengan jeda, lanjut, dan selesai. Sesi selesai masuk riwayat dan menetapkan rotasi berikutnya.
+- Set aktual menyimpan repetisi, beban per alat atau durasi tahan. Timer istirahat tersedia selama sesi. Pengguna bisa memilih variasi atau melewati gerakan yang belum memiliki set.
+- Delapan skema asli, petunjuk teknik, kesalahan umum, keamanan, dan alternatif pemula. Source utama `src/lib/workout.ts`, `src/components/workout-controls.tsx`, dan `public/exercises`.
+
+## 4 · Progres tubuh
+
+- Berat dan lingkar pinggang bisa disimpan, diedit, dan dihapus per tanggal. Grafik memakai tanggal aktual dan menampilkan hanya pengukuran yang tersedia. Ringkasan mengikuti periode 12 minggu.
+- Berat awal dan target profil tampil terpisah dari berat terakhir yang diukur. Perbandingan kekuatan memakai set terbaik pada dua sesi terakhir yang memuat gerakan sejenis.
+- Galeri privat memakai bucket Supabase dengan kebijakan folder pemilik. Unggahan gambar dinormalisasi ke JPEG. Ekspor akun menyertakan riwayat latihan, pengukuran, dan metadata galeri.
+- Uji unit dan SQL menambah verifikasi jadwal, grafik, rata-rata tanpa nilai fiktif, transisi sesi, kepemilikan, dan kebijakan foto privat. Skenario Playwright mencakup Workout A dan B, jeda, refresh, pergantian gerakan, pengukuran dan alur foto. Pengujian aplikasi lokal memakai PostgreSQL, Supabase Auth, PostgREST dan layanan Storage uji. Konfigurasi proyek lokal dengan Supabase CLI bisa menggunakan Storage Supabase langsung.

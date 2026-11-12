@@ -4,7 +4,7 @@
 
 ## PRD
 
-FORMA membantu pemilik menghubungkan asupan makan, latihan, dan perubahan tubuh selama 12 minggu. Pengguna mencatat makanan Indonesia dari ponsel. Alur rilis ini adalah daftar dan konfirmasi email → isi profil dan target → catat makanan → lihat sisa target dan jurnal harian → sesuaikan target melalui Profil.
+FORMA membantu pemilik menghubungkan asupan makan, latihan, dan perubahan tubuh selama 12 minggu. Pengguna mencatat makanan Indonesia dari ponsel. Alur rilis mencakup profil dan target, jurnal makan, Workout A/B, serta catatan dan ringkasan progres 12 minggu.
 
 | Kebutuhan pengguna | Pengalaman di versi 0.1.0 | Kriteria penerimaan |
 | --- | --- | --- |
@@ -28,6 +28,8 @@ Target pengalaman dari handoff adalah pencatatan makanan yang sudah dikenal dala
 | FR-NUT-005–007 | Tanggal/jam manual, riwayat harian, edit, hapus, total dan selisih terhadap target efektif |
 | FR-NUT-008–009 | Makanan kustom privat. Daftar cepat menampilkan hingga lima makanan paling sering dalam 100 catatan terakhir. Frekuensi seri diurutkan menurut pemakaian terbaru |
 | FR-NUT-010–012 | Nama, pengolahan, referensi sumber dan nilai per 100 g disalin saat pencatatan. Varian pengolahan dipisahkan. UI menampilkan label estimasi |
+| FR-WRK-001–013 | Jadwal fleksibel 12 minggu, panduan A/B dan alternatif pemula, ilustrasi asli, sesi persisten dengan jeda/lanjut, set aktual, timer, lewati/ganti gerakan dan riwayat. |
+| FR-PRG-001–010 | Catat berat/pinggang bertanggal, grafik dari catatan, rerata mingguan, baseline dan target profil, perbandingan set, serta galeri foto privat. |
 | NFR | UI Bahasa Indonesia, navigasi bawah di ponsel, kontrol keyboard, status memuat/kosong/gagal, validasi Zod/SQL, kepemilikan RLS |
 | Data pengguna | Ekspor profil, riwayat target, makanan pribadi, dan jurnal. Penghapusan akun mandiri direncanakan sebelum rilis umum |
 
@@ -40,9 +42,8 @@ Target pengalaman dari handoff adalah pencatatan makanan yang sudah dikenal dala
 - Tanggal jurnal mengikuti WIB, WITA, atau WIT yang dipilih saat onboarding. Pencatatan hari lampau didukung. Sebelum target pertama berlaku, jurnal menampilkan total asupan tanpa sisa target.
 - Jurnal bersumber dari catatan yang tersimpan. Halaman Beranda dan Nutrisi menampilkan keadaan kosong bila tanggal belum memiliki catatan.
 
-## Urutan pengembangan setelah 0.1.0
+## Urutan pengembangan berikutnya
 
-1. **Latihan.** Library gerakan dan teknik, program A/B 12 minggu, media berlisensi, sesi dan set, riwayat.
-2. **Progres.** Berat, lingkar pinggang, grafik kronologis, rerata mingguan, dan pencapaian berdasarkan pengukuran nyata.
-3. **Pengingat dan PWA.** Jadwal lokal, izin, deduplikasi, instalasi Android dan pengujian perilaku tanpa koneksi.
-4. **Rilis.** Pemulihan akses dan penghapusan akun mandiri, pengujian perangkat fisik, pengiriman email hosted, rilis Vercel dan uji pemakaian pribadi. Impor prototype dapat diprioritaskan apabila ada catatan lama yang ingin dipindahkan.
+1. **Pengingat dan PWA.** Jadwal lokal, izin, deduplikasi, instalasi Android dan pengujian perilaku tanpa koneksi.
+2. **Nutrisi dan evaluasi.** Resep tersimpan, riwayat lanjutan, evaluasi mingguan dan saran progres latihan.
+3. **Rilis umum.** Pemulihan akun, penghapusan akun mandiri, SMTP dan uji perangkat fisik.

@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const config: NextConfig = {
   poweredByHeader: false,
+  experimental: { serverActions: { bodySizeLimit: "4mb" } },
   async headers() {
     return [
       { source: "/:path*", headers: [
@@ -9,7 +10,7 @@ const config: NextConfig = {
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         { key: "X-Frame-Options", value: "DENY" },
       ] },
-      { source: "/:path(beranda|nutrisi|profil|orientasi|masuk|daftar|auth/confirm|api/ekspor)", headers: [
+      { source: "/:path(beranda|nutrisi|profil|latihan|progres|orientasi|masuk|daftar|auth/confirm|api/ekspor)", headers: [
         { key: "Cache-Control", value: "private, no-store" },
       ] },
     ];
