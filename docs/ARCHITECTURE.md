@@ -96,7 +96,7 @@ Jadwal memakai tanggal mulai profil dan zona waktu lokal. Minggu 1–2 menggunak
 
 Setiap tanggal pengukuran menyimpan berat, lingkar pinggang, atau keduanya. Grafik memakai tanggal aktual dan mengabaikan nilai yang kosong. Minggu program dihitung dari tanggal mulai dan rerata memakai pengukuran yang tersedia. Berat awal dan target adalah nilai profil. Ukuran pinggang mengikuti metode [American Heart Association](https://www.heart.org/-/media/PHD-Files/Education/CKMH-Obesity-Measuring-Waist-Circumference_030226.pdf).
 
-Foto masuk ke bucket privat `progress-photos` dengan prefiks ID akun. Aplikasi mengubah JPG, PNG, atau WebP ke JPEG dan menghapus metadata gambar sebelum unggah. Akses baca foto melalui rute autentikasi dengan cache privat. Ekspor JSON mencakup metadata galeri. Foto dapat dibuka dan diunduh satu per satu.
+Foto masuk ke bucket privat `progress-photos` dengan prefiks ID akun. Aplikasi mengubah JPG, PNG, atau WebP ke JPEG dan menghapus metadata gambar sebelum unggah. Rute foto memeriksa sesi dan keberadaan objek di Storage sebelum mengambil gambar. Respons tidak disimpan di cache browser agar tautan lama ditolak setelah foto dihapus. Ekspor JSON mencakup metadata galeri. Foto dapat dibuka dan diunduh satu per satu.
 
 ```mermaid
 erDiagram
