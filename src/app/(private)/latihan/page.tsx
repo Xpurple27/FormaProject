@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
-import { CalendarDays, Dumbbell } from "lucide-react";
+import { CalendarDays, Dumbbell, History } from "lucide-react";
 import { Feedback } from "@/components/feedback";
 import { ActiveWorkout, ExerciseGuide, ScheduleForm, SetEditor, StartWorkoutForm } from "@/components/workout-controls";
 import { dayOffset, localNow, longDate } from "@/lib/dates";
@@ -22,14 +22,18 @@ export default async function WorkoutPage({ searchParams }: { searchParams: Prom
   const useDumbbells = profile.equipment === "dumbbells";
 
   return <div className="grid gap-4 md:gap-6">
-    <header><p className="eyebrow mb-2">Program kekuatan</p><h1>Latihan</h1>
+    <header className="page-heading"><h1>Latihan</h1>
       <p className="muted mt-2">{week ? "Minggu " + week + " dari 12" : early
         ? "Program dimulai " + longDate(profile.start_date) : "Program 12 minggu telah melewati tanggal akhir."}</p>
     </header>
+    <nav aria-label="Bagian latihan" className="workout-jumps">
+      <Link href="#jadwal" className="btn btn-secondary"><CalendarDays size={16} aria-hidden="true" />Jadwal</Link>
+      <Link href="#riwayat" className="btn btn-secondary"><History size={16} aria-hidden="true" />Riwayat</Link>
+    </nav>
     {query.status === "selesai" && <Feedback message="Sesi selesai dan tercatat di riwayat." />}
     {query.status === "dibatalkan" && <Feedback message="Sesi dibatalkan." />}
     {open ? <ActiveWorkout key={open.id} session={open} records={records.filter(record => record.session_id === open.id)} /> :
-      <section className="card grid gap-4">
+      <section className="card workout-session grid gap-4">
         <h2 className="flex items-center gap-2"><Dumbbell size={21} aria-hidden="true" className="accent" />Sesi berikutnya</h2>
         <p className="caption muted">{week && plan.days.includes(today) ? "Hari ini ada jadwal latihan."
           : "Kamu bisa memulai sesi sesuai waktumu."} Sesi selesai terakhir menentukan rotasi A/B.</p>

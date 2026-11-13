@@ -65,6 +65,9 @@ test("email confirmation, onboarding, rice CRUD, cross-session persistence and p
   expect((await page.request.get("/api/ekspor")).status()).toBe(401);
   const email = await signUp(page, request, "Pengguna Uji A");
 
+  await page.getByRole("navigation", { name: "Navigasi utama" }).getByRole("link", { name: "Catat makanan" }).click();
+  await expect(page).toHaveURL(/\/nutrisi#catat$/);
+  await expect(page.getByLabel("Cari makanan")).toBeInViewport();
   await logRice(page, 200);
   await expect(page.getByTestId("total-calories")).toHaveText("260");
   await expect(page.getByText(/Protein 5,4 g · Karbo 56,3 g · Lemak 0,6 g/)).toBeVisible();
@@ -73,6 +76,13 @@ test("email confirmation, onboarding, rice CRUD, cross-session persistence and p
   await page.getByRole("link", { name: "Hari sebelumnya" }).click();
   await expect(page.getByTestId("total-calories")).toHaveText("0");
   const previousDay = new URL(page.url()).searchParams.get("tanggal")!;
+  await page.getByRole("link", { name: "Catat sarapan" }).click();
+  await expect(page).toHaveURL(new RegExp("tanggal=" + previousDay + "&makan=breakfast#catat$"));
+  await page.getByLabel("Cari makanan").fill("nasi");
+  await page.getByRole("button", { name: /Nasi putih matang/ }).click();
+  const breakfast = page.getByRole("form", { name: "Tambah catatan makanan" });
+  await expect(breakfast.getByLabel("Tanggal", { exact: true })).toHaveValue(previousDay);
+  await expect(breakfast.getByLabel("Waktu makan")).toHaveValue("breakfast");
   await page.getByRole("link", { name: "Hari ini", exact: true }).click();
   await expect(page.getByTestId("total-calories")).toHaveText("260");
 
@@ -246,6 +256,7 @@ test("Workout A and B session, measured trends and a private progress photo", as
   await first.getByLabel("Beban per alat (kg)").fill("4");
   await first.getByRole("button", { name: "Tandai set selesai" }).click();
   await expect(first.getByText("Tercatat", { exact: true })).toBeVisible();
+  await expect(page.getByRole("progressbar", { name: "Set tercatat" })).toHaveAttribute("value", "1");
   await page.reload();
   await expect(first.getByLabel("Repetisi", { exact: true })).toHaveValue("10");
   await page.getByRole("button", { name: "Jeda sesi", exact: true }).click();

@@ -88,7 +88,7 @@ export function SetEditor({ id, slot, set, exerciseId, record, correction = fals
   const remove = useActionForm(removeWorkoutSet);
   const exercise = exerciseFor(exerciseId);
   const amountLabel = exercise.kind === "hold" ? "Durasi (detik)" : exercise.unilateral ? "Repetisi per sisi" : "Repetisi";
-  return <div className="rounded-xl border line bg-[#152431] p-3">
+  return <div className="set-editor">
     <form {...form} aria-label={"Set " + set} className="grid gap-2">
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="slot" value={slot} />
@@ -159,22 +159,26 @@ export function ActiveWorkout({ session, records }: { session: WorkoutSession; r
   const paused = session.status === "paused";
   const progress = session.prescribed_sets * session.exercise_ids.length;
   const partial = records.length > 0 && records.length < progress;
-  return <section id="sesi" className="card grid gap-4">
-    <header className="flex flex-wrap items-start justify-between gap-2">
-      <div><p className="eyebrow">{paused ? "Sesi dijeda" : "Sesi aktif"}</p><h2 className="mt-1">Workout {session.routine}</h2></div>
-      <p className="caption muted numeric">{records.length} dari {progress} set tercatat</p>
+  return <section id="sesi" className="card workout-session grid gap-4">
+    <header className="grid gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div><p className="eyebrow">{paused ? "Sesi dijeda" : "Sesi aktif"}</p><h2 className="mt-1">Workout {session.routine}</h2></div>
+        <p className="caption muted numeric">{records.length} dari {progress} set tercatat</p>
+      </div>
+      <progress className="meter" style={{ "--fill-color": "var(--mint)" } as React.CSSProperties}
+        aria-label="Set tercatat" value={records.length} max={progress} />
     </header>
     {paused ? <div className="grid gap-3">
       <p className="muted">Set yang sudah tercatat tersimpan. Lanjutkan saat siap.</p>
       <WorkoutCommand id={session.id} action="resume" label="Lanjutkan sesi" primary />
     </div> : <>
       <RestTimer />
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <button type="button" className="btn btn-secondary" aria-label="Gerakan sebelumnya"
+      <div className="exercise-switcher">
+        <button type="button" className="topbar-action" aria-label="Gerakan sebelumnya"
           disabled={slot === 1} onClick={() => setSlot(slot - 1)}><ChevronLeft size={18} aria-hidden="true" /></button>
         <div className="text-center min-w-0"><p className="caption muted">Gerakan {slot} dari 4</p>
           <h3 className="mt-1">{exercise.name}</h3><p className="caption muted">{exercise.focus}</p></div>
-        <button type="button" className="btn btn-secondary" aria-label="Gerakan berikutnya"
+        <button type="button" className="topbar-action" aria-label="Gerakan berikutnya"
           disabled={slot === 4} onClick={() => setSlot(slot + 1)}><ChevronRight size={18} aria-hidden="true" /></button>
       </div>
       {skipped ? <div className="grid gap-2"><p className="caption muted">Gerakan dilewati.</p>

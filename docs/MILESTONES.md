@@ -94,3 +94,12 @@ Aplikasi membutuhkan koneksi untuk data akun. Porsi cepat tersedia jika makanan 
 | Aksesibilitas otomatis | Tidak ada temuan aturan axe yang dijalankan pada Nutrisi dan Pengingat |
 | Supabase hosted | Migrasi diterapkan. RLS aktif, akses anonim ditolak, dan jumlah set terisi untuk semua sesi yang sudah ditutup |
 | Android fisik | Belum diuji |
+
+## Tampilan mobile
+
+- Ringkasan kalori dan tiga makro disatukan dalam satu panel. Beranda memberi akses langsung ke pencatatan dan jurnal, dengan pintasan latihan dan progres.
+- Navigasi bawah menempatkan **Catat** di tengah. Pengingat dan Profil dapat dibuka dari header HP.
+- Jurnal menampilkan empat kelompok makan. Tombol tambah per kelompok membuka pencarian dengan tanggal dan waktu makan yang sudah dipilih. Informasi jumlah, makro, dan sumber tetap dapat dibaca pada entri.
+- Layar latihan menampilkan jumlah set yang tersimpan terhadap rencana dan pintasan ke jadwal serta riwayat.
+
+Referensi pola antarmuka mobile [Cronometer](https://support.cronometer.com/hc/en-us/articles/360018593112-Mobile-Diary-Overview), [MacroFactor](https://help.macrofactorapp.com/en/articles/218-how-to-configure-your-food-timeline), [Hevy](https://help.hevyapp.com/hc/en-us/articles/33106320824727-Everything-You-Need-to-Know-About-the-Hevy-App-2026-Features-Guide), dan PWA [Tally](https://github.com/GeneArnold/tally).

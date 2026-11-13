@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Plus, Search } from "lucide-react";
+import { Check, Plus, Search, Utensils } from "lucide-react";
 import { addEntry, changeEntry, removeEntry, saveFood, searchFoods } from "@/lib/actions";
 import { CATEGORIES, fmt, MEALS, scaleNutrition, servingGrams } from "@/lib/nutrition";
 import type { Entry, Food, Nutrients } from "@/lib/types";
@@ -30,7 +30,7 @@ function NutrientPreview({ nutrients, grams }: { nutrients: Nutrients; grams: nu
 }
 
 function PortionChoices({ current, choose }: { current: string; choose: (portion: string) => void }) {
-  return <div className="flex flex-wrap gap-2" role="group" aria-label="Porsi cepat">
+  return <div className="portion-choices" role="group" aria-label="Porsi cepat">
     {([["0.5", "½ porsi"], ["1", "1 porsi"], ["1.5", "1½ porsi"], ["2", "2 porsi"]] as const)
       .map(([value, label]) => <button type="button" key={value}
         className={Number(current) === Number(value) ? "btn btn-primary" : "btn btn-secondary"}
@@ -42,7 +42,8 @@ function FoodChoices({ items, selected, choose }: { items: Food[]; selected?: st
   return <ul className="divide-y divide-[var(--border)]">
     {items.map(item => <li key={item.id}>
       <button className="food-option" type="button" onClick={() => choose(item)} aria-pressed={item.id === selected}>
-        <span className="min-w-0 break-words"><b className="text-sm">{item.name}</b>
+        <span className="tile-icon" aria-hidden="true"><Utensils size={15} /></span>
+        <span className="min-w-0 flex-1 break-words"><b className="text-sm">{item.name}</b>
           <span className="block muted text-xs">{item.preparation} · {item.portion_note && item.serving_g
             ? `≈ ${fmt(item.calories * item.serving_g / 100, 0)} kkal/${item.serving_label}`
             : `${fmt(item.calories)} kkal/100 g`}{item.user_id ? " · Pribadi" : ""}</span></span>
@@ -95,7 +96,7 @@ export function FoodForm({ initial, recent, preselected, id, ...dates }: DatePro
   }
 
   return <section id="catat" className="card grid content-start gap-4">
-    <div><h2>Catat makanan</h2><p className="muted caption mt-1">Pilih makanan sesuai cara pengolahannya.</p></div>
+    <div><h2>Catat makanan</h2>{dates.meal && <p className="muted caption mt-1">{MEALS[dates.meal]}</p>}</div>
     {showCatalog && <div className="grid gap-3">
       <label className="label">Cari makanan
         <span className="relative"><Search size={17} className="pointer-events-none absolute left-3 top-3.5 soft" aria-hidden="true" />
@@ -112,7 +113,7 @@ export function FoodForm({ initial, recent, preselected, id, ...dates }: DatePro
       {waiting ? <p className="muted caption" role="status">Mencari makanan…</p> :
         filtered && result?.error ? <div className="grid gap-2"><Feedback error={result.error} />
           <button className="btn btn-secondary justify-self-start" type="button" onClick={() => setRetry(retry + 1)}>Coba lagi</button></div> :
-          foods.length ? <div className="scroll-foods rounded-lg border line p-1"><FoodChoices items={foods} selected={food?.id} choose={choose} /></div> :
+          foods.length ? <div className="scroll-foods rounded-xl border line"><FoodChoices items={foods} selected={food?.id} choose={choose} /></div> :
             <p className="muted caption">Tidak ada hasil. Coba kata lain atau buat makanan sendiri.</p>}
     </div>}
     {food && <form {...form} className="grid gap-3 border-t pt-4 line" aria-label="Tambah catatan makanan">
@@ -151,12 +152,13 @@ export function FoodForm({ initial, recent, preselected, id, ...dates }: DatePro
   </section>;
 }
 
-export function CustomFoodForm({ id, diaryDate }: { id: string; diaryDate: string }) {
+export function CustomFoodForm({ id, diaryDate, meal }: { id: string; diaryDate: string; meal?: Entry["meal_type"] }) {
   const { state, pending, form } = useActionForm(saveFood);
   return <details className="card !py-2">
     <summary className="font-semibold accent">Buat makanan sendiri</summary>
     <form {...form} className="grid gap-3 pb-3">
       <input type="hidden" name="id" value={id} /><input type="hidden" name="diaryDate" value={diaryDate} />
+      {meal && <input type="hidden" name="diaryMeal" value={meal} />}
       <p className="caption muted">Gunakan label kemasan atau estimasi bahan. Masukkan nilai untuk 100 g makanan.</p>
       <label className="label">Nama makanan<input name="name" className="field" maxLength={100} required /></label>
       <div className="grid grid-cols-2 gap-3">

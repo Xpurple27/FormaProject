@@ -12,39 +12,39 @@ const macros = [
 export function NutritionSummary({ totals, target, label }: { totals: Nutrients; target: Target | null; label: string }) {
   const percent = target ? Math.round(totals.calories / target.calories * 100) : null;
   const diff = target ? target.calories - totals.calories : null;
-  return <section aria-label="Ringkasan nutrisi" className="grid gap-3">
-    <div className="card energy-card flex items-center justify-between gap-4 sm:gap-8">
+  return <section aria-label="Ringkasan nutrisi" className="card energy-card">
+    <div className="energy-overview">
       <div className="min-w-0">
-        <div className="flex items-center gap-2 muted text-sm font-medium"><Flame size={18} className="accent" aria-hidden="true" />{label}</div>
-        <p className="mt-2 flex flex-wrap items-baseline gap-x-2 numeric">
-          <strong className="text-[clamp(2rem,7vw,3.7rem)] leading-none tracking-[-.07em]" data-testid="total-calories">{fmt(totals.calories)}</strong>
-          <span className="muted text-sm">{target && "/ " + fmt(target.calories) + " "}kkal</span>
+        <div className="flex items-center gap-2 muted text-sm font-medium">
+          <Flame size={17} className="accent shrink-0" aria-hidden="true" />{label}
+        </div>
+        <p className="energy-total numeric">
+          <strong data-testid="total-calories">{fmt(totals.calories)}</strong>
+          <span className="muted text-sm">kkal</span>
         </p>
-        <p className="mt-3 caption">{diff === null ? "Target belum berlaku pada tanggal ini." : diff < 0
-          ? <><b>{fmt(-diff)} kkal</b> di atas target</> : <><b>{fmt(diff)} kkal</b> tersisa</>}</p>
+        <p className="caption muted">{target ? <>Target {fmt(target.calories)} kkal</> : "Target belum berlaku pada tanggal ini."}</p>
+        {diff !== null && <p className={diff < 0 ? "energy-balance energy-balance-over" : "energy-balance"}>
+          <b>{fmt(Math.abs(diff))} kkal</b> {diff < 0 ? "di atas target" : "tersisa"}
+        </p>}
       </div>
       {percent !== null && <div className="ring numeric" style={{ "--fill": Math.min(100, percent) + "%" } as CSSProperties}
         role="img" aria-label={fmt(percent, 0) + "% dari target kalori"}><span>{percent > 999 ? "999+" : percent}%</span></div>}
     </div>
-    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+    <dl className="macro-grid">
       {macros.map(({ key, label, color }) => {
         const limit = target?.[key];
         const value = totals[key];
-        return <div key={key} className="card !rounded-xl !p-2.5 sm:!p-4">
-          <div className="flex items-center gap-1 sm:gap-2" style={{ color }}>
-            <span className="hidden h-1.5 w-1.5 shrink-0 rounded-full bg-current sm:block" aria-hidden="true" />
-            <span className="text-[.68rem] min-[380px]:text-xs sm:text-sm font-semibold">{label}</span>
-          </div>
-          <p className="mt-2 numeric text-sm sm:text-base"><strong>{fmt(value)}</strong> <span className="muted text-xs">g</span></p>
-          {limit !== undefined && <>
-            {limit > 0 && <progress className="meter mt-2" style={{ "--fill-color": color } as CSSProperties}
+        return <div key={key} className="macro-item" style={{ "--fill-color": color } as CSSProperties}>
+          <dt><span className="macro-dot" aria-hidden="true" />{label}</dt>
+          <dd className="numeric">
+            <strong>{fmt(value)}</strong> <span className="muted text-xs">g</span>
+            {limit !== undefined && <span className="macro-target muted" title={value > limit
+              ? fmt(value - limit) + " g di atas target" : fmt(limit - value) + " g tersisa"}> / {fmt(limit)} g</span>}
+            {limit !== undefined && limit > 0 && <progress className="meter mt-1.5"
               aria-label={"Progres " + label.toLowerCase()} value={Math.min(limit, value)} max={limit} />}
-            <p className="muted mt-2 text-[.68rem] sm:text-xs">
-              {value > limit ? fmt(value - limit) + " g di atas target" : fmt(limit - value) + " g tersisa"}
-            </p>
-          </>}
+          </dd>
         </div>;
       })}
-    </div>
+    </dl>
   </section>;
 }

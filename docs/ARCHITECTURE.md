@@ -41,15 +41,15 @@ erDiagram
 
 | Peran | Nilai |
 | --- | --- |
-| Latar | `#101D2B` |
-| Kartu dan permukaan sekunder | `#1A2B3B`, `#263D4E` |
+| Latar | `#101C29` |
+| Kartu dan permukaan sekunder | `#182938`, `#213647` |
 | Aksen utama | `#8BE2BB` |
 | Teks dan teks sekunder | `#F2F7FA`, `#B1C2CF` |
 | Makro | Protein `#8CCAFF`, karbohidrat `#EFC989`, lemak `#D8B5F3` |
 | Tipografi | Inter Variable yang dibundel lokal, angka tabular untuk data |
 | Interaksi | Fokus terlihat, input 46 px, tombol utama minimal 44 px, dan navigasi bawah dengan safe-area |
 
-Beranda menempatkan asupan energi dan sisa target di bagian atas. Nutrisi menampilkan pencatatan sebelum riwayat di ponsel dan memakai dua kolom saat lebar cukup. Tiga tujuan aktif adalah Beranda, Nutrisi, dan Profil. Latihan dan Progres ditambahkan setelah fiturnya dapat digunakan. Cincin energi dan batang makro membaca nilai dari jurnal dan target pengguna.
+Beranda menempatkan asupan energi dan sisa target di bagian atas. Nutrisi menampilkan riwayat per waktu makan, dengan tautan ke formulir yang membawa tanggal dan kelompok makan. Riwayat dan formulir tampil berdampingan pada layar lebar. Navigasi HP menempatkan Catat di antara Beranda, Nutrisi, Latihan, dan Progres. Profil dan Pengingat tersedia pada header. Cincin energi dan batang makro membaca nilai dari jurnal dan target pengguna.
 
 ## Sumber katalog
 

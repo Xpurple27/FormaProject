@@ -217,6 +217,7 @@ export async function saveFood(_: FormState, form: FormData): Promise<FormState>
   const payload = Object.fromEntries(form);
   const result = schemas.customFood.safeParse(payload);
   const day = schemas.date.safeParse(payload.diaryDate);
+  const meal = schemas.entryFields.meal.safeParse(payload.diaryMeal);
   if (!result.success || !day.success) {
     return { error: "Periksa angka per 100 g. Total makro maksimal 100 g. Isi nama dan berat porsi bersama, atau kosongkan keduanya." };
   }
@@ -232,5 +233,5 @@ export async function saveFood(_: FormState, form: FormData): Promise<FormState>
     if (!data) return saveError;
   }
   revalidatePath("/nutrisi");
-  redirect("/nutrisi?tanggal=" + day.data + "&catat=" + x.id + "&status=makanan#catat");
+  redirect("/nutrisi?tanggal=" + day.data + "&catat=" + x.id + "&status=makanan" + (meal.success ? "&makan=" + meal.data : "") + "#catat");
 }
