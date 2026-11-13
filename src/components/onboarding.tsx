@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { completeOnboarding, signOut } from "@/lib/actions";
+import { completeOnboarding, signOut, updateProfile } from "@/lib/actions";
 import { ACTIVITIES, bodyMassIndex, energyEstimate, EQUIPMENT, fmt, GOALS, recommendNutrition } from "@/lib/nutrition";
 import { Feedback } from "./feedback";
 import { TargetFields, targetValues } from "./targets";
@@ -11,7 +11,6 @@ import type { Profile } from "@/lib/types";
 type Baseline = { age: string; height: string; weight: string; milestone: string; sex: Profile["sex_for_bmr"];
   activity: Profile["activity_level"]; goal: Profile["goal"]; equipment: Profile["equipment"] };
 const emptyBaseline: Baseline = { age: "", height: "", weight: "", milestone: "", sex: "male", activity: "light", goal: "recomposition", equipment: "none" };
-const exampleBaseline: Baseline = { age: "30", height: "170", weight: "75", milestone: "72", sex: "male", activity: "light", goal: "recomposition", equipment: "dumbbells" };
 
 export function SignOutForm() {
   const { state, pending, form } = useActionForm(signOut);
@@ -34,13 +33,15 @@ export function Onboarding({ today }: { today: string }) {
   const suggested = ready ? recommendNutrition(body) : null;
   return <div className="grid gap-5">
     <header><p className="eyebrow mb-2">Pengaturan awal</p><h1>Siapkan profilmu</h1>
-      <p className="muted mt-2">Tetapkan titik awal dan target yang ingin kamu pantau.</p></header>
-    <form {...form} className="grid gap-4">
+      <p className="muted mt-2">Isi data tubuhmu. FORMA akan menghitung estimasi target harian yang bisa kamu ubah nanti.</p></header>
+    <form {...form} className="grid gap-4" onInvalid={event => {
+      if (event.target instanceof HTMLElement) {
+        const details = event.target.closest("details");
+        if (details) details.open = true;
+      }
+    }}>
       <section className="card grid gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2>Data awal</h2>
-          <button type="button" className="btn btn-secondary" onClick={() => { setBase(exampleBaseline); setManual(false); }}>Gunakan profil awal FORMA</button>
-        </div>
+        <h2>Data tubuh dan aktivitas</h2>
         <label className="label">Nama panggilan<input name="name" className="field" autoComplete="nickname" maxLength={60} required /></label>
         <div className="grid grid-cols-2 gap-3">
           {([["age", "Usia (tahun)", 18, 100], ["height", "Tinggi (cm)", 100, 250], ["weight", "Berat awal (kg)", 25, 350], ["milestone", "Target berat (opsional)", 25, 350]] as const)
@@ -55,20 +56,24 @@ export function Onboarding({ today }: { today: string }) {
             onChange={event => setBase({ ...base, activity: event.target.value as Baseline["activity"] })}>
             {Object.entries(ACTIVITIES).map(([key, activity]) => <option key={key} value={key}>{activity.label}</option>)}
           </select></label>
-          <label className="label">Tujuan<select name="goal" className="field" value={base.goal}
-            onChange={event => setBase({ ...base, goal: event.target.value as Baseline["goal"] })}>
-            {Object.entries(GOALS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-          </select></label>
-          <label className="label">Peralatan<select name="equipment" className="field" value={base.equipment}
-            onChange={event => setBase({ ...base, equipment: event.target.value as Baseline["equipment"] })}>
-            {Object.entries(EQUIPMENT).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-          </select></label>
-          <label className="label">Zona waktu<select name="timezone" className="field" defaultValue="Asia/Jakarta">
-            <option value="Asia/Jakarta">WIB</option><option value="Asia/Makassar">WITA</option><option value="Asia/Jayapura">WIT</option>
-          </select></label>
-          <label className="label">Tanggal mulai program<input name="start" className="field" type="date" min="1900-01-01" max="9999-12-31" defaultValue={today} required /></label>
         </div>
-        <p className="caption muted">Pilih tanggal mulai program. Kamu tetap bisa mencatat makanan hari ini.</p>
+        <details className="rounded-xl border line px-3">
+          <summary className="font-semibold">Tujuan, peralatan, dan tanggal mulai</summary>
+          <div className="grid gap-3 pb-3 sm:grid-cols-2">
+            <label className="label">Tujuan<select name="goal" className="field" value={base.goal}
+              onChange={event => setBase({ ...base, goal: event.target.value as Baseline["goal"] })}>
+              {Object.entries(GOALS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select></label>
+            <label className="label">Peralatan<select name="equipment" className="field" value={base.equipment}
+              onChange={event => setBase({ ...base, equipment: event.target.value as Baseline["equipment"] })}>
+              {Object.entries(EQUIPMENT).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select></label>
+            <ZoneField value="Asia/Jakarta" />
+            <label className="label">Tanggal mulai program<input name="start" className="field" type="date"
+              min="1900-01-01" max="9999-12-31" defaultValue={today} required /></label>
+            <p className="caption muted sm:col-span-2">Pilih tanggal mulai sesukamu. Jurnal makanan tersedia mulai hari ini.</p>
+          </div>
+        </details>
         <div className="rounded-xl bg-[#132332] p-4">
           <h3>Estimasi energi</h3>
           <p className="mt-2 caption muted" aria-live="polite">{estimate
@@ -112,4 +117,48 @@ export function Onboarding({ today }: { today: string }) {
     </form>
     <SignOutForm />
   </div>;
+}
+
+
+function ZoneField({ value }: { value: string }) {
+  return <label className="label">Zona waktu<select name="timezone" className="field" defaultValue={value}>
+    <option value="Asia/Jakarta">WIB</option><option value="Asia/Makassar">WITA</option><option value="Asia/Jayapura">WIT</option>
+  </select></label>;
+}
+
+export function EditProfileForm({ profile }: { profile: Profile }) {
+  const { state, pending, form } = useActionForm(updateProfile);
+  return <details className="rounded-xl border line px-3">
+    <summary className="font-semibold">Ubah data profil</summary>
+    <form {...form} className="grid gap-3 pb-3">
+      <p className="caption muted">Gunakan berat awal untuk mengoreksi titik awal program. Untuk hasil timbangan terbaru, tambahkan pengukuran di Progres. Target nutrisi dapat diperbarui secara terpisah.</p>
+      <label className="label">Nama panggilan<input name="name" className="field" maxLength={60} defaultValue={profile.name} required /></label>
+      <div className="grid grid-cols-2 gap-3">
+        {([
+          ["age", "Usia (tahun)", 18, 100, 1, profile.age_years],
+          ["height", "Tinggi (cm)", 100, 250, .1, profile.height_cm],
+          ["weight", "Berat awal (kg)", 25, 350, .1, profile.initial_weight_kg],
+          ["milestone", "Target berat (opsional)", 25, 350, .1, profile.milestone_kg],
+        ] as const).map(([name, label, min, max, step, value]) => <label key={name} className="label">{label}
+          <input name={name} className="field" type="number" inputMode="decimal" min={min} max={max} step={step}
+            defaultValue={value ?? ""} required={name !== "milestone"} />
+        </label>)}
+        <label className="label">Jenis kelamin untuk BMR<select name="sex" className="field" defaultValue={profile.sex_for_bmr}>
+          <option value="male">Laki-laki</option><option value="female">Perempuan</option>
+        </select></label>
+        <label className="label">Tingkat aktivitas<select name="activity" className="field" defaultValue={profile.activity_level}>
+          {Object.entries(ACTIVITIES).map(([key, activity]) => <option key={key} value={key}>{activity.label}</option>)}
+        </select></label>
+        <label className="label">Tujuan<select name="goal" className="field" defaultValue={profile.goal}>
+          {Object.entries(GOALS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+        </select></label>
+        <label className="label">Peralatan<select name="equipment" className="field" defaultValue={profile.equipment}>
+          {Object.entries(EQUIPMENT).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+        </select></label>
+        <ZoneField value={profile.timezone} />
+      </div>
+      <Feedback {...state} />
+      <button className="btn btn-secondary justify-self-start" disabled={pending}>{pending ? "Menyimpan…" : "Simpan data profil"}</button>
+    </form>
+  </details>;
 }

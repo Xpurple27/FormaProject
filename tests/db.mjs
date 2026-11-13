@@ -71,7 +71,9 @@ try {
     await query("update public.profiles set start_date='2099-03-01' where user_id=$1", [userC]);
     assert.equal((await query("select start_date::text from public.profiles"))[0].start_date, "2099-03-01");
     assert.equal((await query("select effective_from::text from public.nutrition_targets"))[0].effective_from, before.today);
-    await assert.rejects(query("update public.profiles set name='Altered'"), /permission denied/);
+    await query("update public.profiles set name='Corrected', initial_weight_kg=74, timezone='Asia/Makassar'");
+    assert.equal((await query("select name from public.profiles"))[0].name, "Corrected");
+    await assert.rejects(query("update public.profiles set user_id=$1", [userA]), /permission denied/);
     await setup(userA);
     assert.equal((await query("update public.profiles set start_date='2099-04-01' where user_id=$1 returning start_date", [userC])).length, 0);
   });
@@ -133,12 +135,30 @@ try {
     await transition("resume");
     await transition("finish");
     await assert.rejects(log(9), /not active/);
-    assert.equal((await query("select status from public.workout_sessions where id=$1", [id]))[0].status, "completed");
+    assert.deepEqual((await query("select status, completed_set_count from public.workout_sessions where id=$1", [id]))[0],
+      { status: "completed", completed_set_count: 1 });
+    assert.equal((await query("update public.workout_sets set amount=11 where session_id=$1 returning amount", [id]))[0].amount, 11);
+    await assert.rejects(query("delete from public.workout_sets where session_id=$1", [id]), /not active/);
     await setup(userB);
     assert.equal((await query("select * from public.workout_sessions where id=$1", [id])).length, 0);
     assert.equal((await query("select * from public.workout_sets where session_id=$1", [id])).length, 0);
     await assert.rejects(transition("resume"), /Session is closed/);
     await assert.rejects(log(8), /not active/);
+  });
+  await check("reminders are owned, reject invalid times, and atomically claim a notification once", async () => {
+    const id = crypto.randomUUID();
+    await setup(userA);
+    await assert.rejects(query("insert into public.reminders(kind,local_time,weekdays) values ('meal','07:00:22',array[1]::smallint[])"), /check constraint/);
+    await query("insert into public.reminders(id,kind,local_time,weekdays) values ($1,'meal','07:00',array[1,3]::smallint[])", [id]);
+    const claim = () => query("update public.reminders set last_notified_at='2026-11-13 00:00Z' where id=$1 and (last_notified_at is null or last_notified_at < '2026-11-13 00:00Z') returning id", [id]);
+    assert.equal((await claim()).length, 1);
+    assert.equal((await claim()).length, 0);
+    await setup(userB);
+    assert.equal((await query("select * from public.reminders where id=$1", [id])).length, 0);
+    assert.equal((await query("update public.reminders set enabled=false where id=$1 returning id", [id])).length, 0);
+    assert.equal((await query("delete from public.reminders where id=$1 returning id", [id])).length, 0);
+    await db.exec("reset role; set role anon");
+    await assert.rejects(query("select * from public.reminders"), /permission denied/);
   });
   await check("measurement date and ownership, including missing weight", async () => {
     await setup(userA);

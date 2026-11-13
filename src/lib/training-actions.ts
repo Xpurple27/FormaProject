@@ -26,7 +26,7 @@ const actionInput = z.object({
 });
 const setInput = z.object({
   id: sessionId, slot: integer(1, 4), set: integer(1, 3),
-  amount: integer(1, 600), load: optionalNumber(0, 100).optional(),
+  amount: integer(1, 600), load: optionalNumber(0, 100).optional(), version: version.optional(),
 });
 const bodyInput = z.object({
   date, weight: optionalNumber(25, 350), waist: optionalNumber(30, 300),
@@ -105,17 +105,24 @@ export async function saveWorkoutSet(_: FormState, form: FormData): Promise<Form
   const x = parsed.data;
   const session = await client.from("workout_sessions").select("exercise_ids,status").eq("user_id", userId)
     .eq("id", x.id).maybeSingle();
-  if (session.error || !session.data || session.data.status !== "active") return unable;
+  if (session.error || !session.data || session.data.status !== (x.version ? "completed" : "active")) return unable;
   const exerciseId = session.data.exercise_ids[x.slot - 1];
   if (!exerciseId) return invalid;
   const exercise = exerciseFor(exerciseId);
   if (exercise.kind === "reps" && x.amount > 100) return invalid;
 
-  const { error } = await client.from("workout_sets").upsert({
-    user_id: userId, session_id: x.id, exercise_id: exerciseId, slot: x.slot,
-    set_number: x.set, amount: x.amount, load_kg: exercise.weighted ? x.load ?? null : null,
-  }, { onConflict: "session_id,slot,set_number" });
-  if (error) return unable;
+  const values = { amount: x.amount, load_kg: exercise.weighted ? x.load ?? null : null };
+  if (x.version) {
+    const { data, error } = await client.from("workout_sets").update(values)
+      .eq("user_id", userId).eq("session_id", x.id).eq("slot", x.slot).eq("set_number", x.set)
+      .eq("recorded_at", x.version).select("slot").maybeSingle();
+    if (error || !data) return unable;
+  } else {
+    const { error } = await client.from("workout_sets").upsert({
+      ...values, user_id: userId, session_id: x.id, exercise_id: exerciseId, slot: x.slot, set_number: x.set,
+    }, { onConflict: "session_id,slot,set_number" });
+    if (error) return unable;
+  }
   refreshWorkout();
   return { message: "Set " + x.set + " tersimpan." };
 }
@@ -125,9 +132,9 @@ export async function removeWorkoutSet(_: FormState, form: FormData): Promise<Fo
   const parsed = setInput.pick({ id: true, slot: true, set: true }).safeParse(Object.fromEntries(form));
   if (!parsed.success) return invalid;
   const x = parsed.data;
-  const { error } = await client.from("workout_sets").delete().eq("user_id", userId)
-    .eq("session_id", x.id).eq("slot", x.slot).eq("set_number", x.set);
-  if (error) return unable;
+  const { data, error } = await client.from("workout_sets").delete().eq("user_id", userId)
+    .eq("session_id", x.id).eq("slot", x.slot).eq("set_number", x.set).select("slot").maybeSingle();
+  if (error || !data) return unable;
   refreshWorkout();
   return { message: "Set dihapus." };
 }

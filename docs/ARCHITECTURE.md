@@ -20,6 +20,7 @@ erDiagram
 | `20261112165623_everyday_food_catalog.sql` | Dua belas pangan tambahan dengan porsi dan catatan komposisi |
 | `20261112174411_workout_and_progress.sql` | Jadwal, sesi, set, pengukuran, penguncian sesi dan RLS |
 | `20261112174414_progress_photo_storage.sql` | Bucket foto privat dan akses menurut pemilik folder |
+| `20261113035208_reminders_and_profile_corrections.sql` | Jadwal privat, klaim notifikasi, koreksi profil dan set, jumlah set saat sesi ditutup, snapshot porsi |
 
 ## Keputusan dan konsekuensi
 
@@ -30,6 +31,11 @@ erDiagram
 - **Duplikasi dan konflik.** Formulir penambahan memakai UUID yang sama ketika pengiriman diulang. Mutasi edit dan hapus memakai versi `updated_at` sehingga tab lama menerima pesan konflik. Target harian memiliki satu baris per akun dan tanggal efektif. Perubahan pada tanggal yang sama mengganti target tanggal tersebut.
 - **Katalog dan ekspor.** Makanan rujukan dikelola lewat migrasi. Makanan pribadi dan jurnal dapat dibaca oleh pemilik. Unduhan JSON meminta data lewat sesi yang aktif. Ekspor mencakup semua halaman hasil, tetapi perubahan yang terjadi bersamaan dengan ekspor dapat terlihat dari waktu yang berbeda.
 - **Kinerja.** Ringkasan harian dibaca berdasarkan indeks `(user_id, local_date, consumed_at, id)`. Pencarian di-debounce dan mengambil hingga 30 hasil. Aplikasi personal ini memakai pencarian nama langsung dengan ILIKE. Penambahan katalog besar memerlukan evaluasi indeks pencarian dan pagination.
+
+## Pengingat dan PWA
+
+- Jadwal disimpan dalam PostgreSQL dengan kebijakan RLS pemilik. Runtime menentukan kejadian dari hari dan zona profil, termasuk jadwal yang melewati tengah malam. Snooze memakai waktu absolut. Klaim notifikasi menguji versi pengaturan dan waktu kejadian dalam satu pembaruan bersyarat.
+- Service worker menyiapkan halaman offline publik. Navigasi mencoba jaringan lebih dulu. Operasi tulis, data akun, dan foto tetap memakai koneksi dan sesi yang aktif.
 
 ## Sistem desain
 
@@ -71,7 +77,7 @@ IMT dihitung dari berat dibagi tinggi kuadrat dalam meter. Energi awal menggunak
 
 Kalori dibulatkan ke 10 kkal, protein dihitung dari sekitar 25% energi dan lemak dari sekitar 30% energi. Karbohidrat memakai energi tersisa agar target kalori dan makro konsisten. Form otomatis memakai perhitungan yang sama dengan Server Action. Rujukan [IMT CDC](https://www.cdc.gov/bmi/about/index.html), [Mifflin et al.](https://pubmed.ncbi.nlm.nih.gov/2305711/), dan [rentang makro dewasa](https://www.nationalacademies.org/read/10925/chapter/25).
 
-Tanggal mulai program dapat berupa tanggal lampau atau mendatang. Saat onboarding, tanggal efektif target pertama adalah tanggal yang lebih awal antara tanggal mulai dan hari ini di zona waktu profil. Edit tanggal mulai hanya memiliki izin pada kolom tersebut dan baris milik pengguna. Riwayat target dan jurnal mempertahankan tanggalnya.
+Tanggal mulai program dapat berupa tanggal lampau atau mendatang. Saat onboarding, tanggal efektif target pertama adalah tanggal yang lebih awal antara tanggal mulai dan hari ini di zona waktu profil. Edit tanggal mulai dan data profil memakai izin kolom terpisah pada baris milik pengguna. Riwayat target dan jurnal mempertahankan tanggalnya.
 
 ## Hidangan sehari-hari
 

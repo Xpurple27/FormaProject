@@ -22,7 +22,7 @@ Target pengalaman dari handoff adalah pencatatan makanan yang sudah dikenal dala
 | --- | --- |
 | FR-AUTH-001–003 | Supabase Auth email dan kata sandi, konfirmasi email, masuk, keluar, pemulihan sesi lewat cookie |
 | FR-ONB-001–004 | Form data awal, IMT, estimasi BMR dan TDEE, serta target harian otomatis dengan pilihan isi manual |
-| FR-ONB-005 | Tertunda hingga alur latihan memerlukan informasi ini |
+| FR-ONB-005 | Pilihan peralatan tersedia pada pengaturan awal dan Profil. Variasi Workout A/B mengikuti peralatan yang dipilih. |
 | FR-ONB-006 | Tanggal mulai, berat awal, dan target berat opsional tersimpan di profil. Tanggal mulai dapat diedit dan bisa mendatang. Seri pengukuran masuk fase Progres |
 | FR-NUT-001–004 | Pencarian nama Indonesia, filter kategori, gram atau porsi jika tersedia, pratinjau energi dan makro, empat kelompok makan |
 | FR-NUT-005–007 | Tanggal/jam manual, riwayat harian, edit, hapus, total dan selisih terhadap target efektif |
@@ -30,12 +30,14 @@ Target pengalaman dari handoff adalah pencatatan makanan yang sudah dikenal dala
 | FR-NUT-010–012 | Nama, pengolahan, referensi sumber dan nilai per 100 g disalin saat pencatatan. Varian pengolahan dipisahkan. UI menampilkan label estimasi |
 | FR-WRK-001–013 | Jadwal fleksibel 12 minggu, panduan A/B dan alternatif pemula, ilustrasi asli, sesi persisten dengan jeda/lanjut, set aktual, timer, lewati/ganti gerakan dan riwayat. |
 | FR-PRG-001–010 | Catat berat/pinggang bertanggal, grafik dari catatan, rerata mingguan, baseline dan target profil, perbandingan set, serta galeri foto privat. |
+| FR-REM-001–008 | Jadwal makan, latihan, timbang berat, dan waktu tidur. Jam lokal WIB/WITA/WIT, hari pilihan, aktif/nonaktif, tunda 10 menit, tutup, dan hapus. Pengingat tampil saat aplikasi terbuka. Notifikasi perangkat bergantung pada izin dan dukungan browser. |
+| PWA | Manifest, ikon standar dan maskable, tampilan mandiri, serta halaman offline tanpa data akun. |
 | NFR | UI Bahasa Indonesia, navigasi bawah di ponsel, kontrol keyboard, status memuat/kosong/gagal, validasi Zod/SQL, kepemilikan RLS |
 | Data pengguna | Ekspor profil, riwayat target, makanan pribadi, dan jurnal. Penghapusan akun mandiri direncanakan sebelum rilis umum |
 
 ### Perilaku yang perlu diketahui
 
-- Saat memasukkan data awal, tombol profil awal mengisi contoh usia 30 tahun, tinggi 170 cm, berat 75 kg, target berat 72 kg, dan aktivitas ringan. Target nutrisi dihitung dari isian saat ini, lalu dapat diubah lewat Profil. Baseline lain disimpan sebagai titik awal.
+- Saat memasukkan data awal, pengguna mengisi data tubuh sendiri. Pilihan lanjutan mencakup tujuan, peralatan, zona waktu, dan tanggal mulai. Target otomatis mengikuti data yang diisi. Data awal dan target bisa dikoreksi lewat Profil. Hasil timbangan terbaru masuk Progres.
 - Untuk target 2.100 kkal, protein 120 g, dan lemak 70 g, karbohidrat yang membuat energi konsisten adalah 247,5 g. Profil menghitung angka ini dari tiga input.
 - Hidangan campuran di katalog memakai resep acuan per piring, buah, atau gelas. Pengguna dapat menyesuaikan jumlah atau gram, mencatat bahan terpisah, atau membuat makanan pribadi berdasarkan label per 100 g. Resep tersimpan, perhitungan resep majemuk, dan resep berulang masuk fase berikutnya.
 - Jurnal dan target pertama tersedia mulai hari ini ketika program dimulai di masa depan. Mengedit tanggal mulai di Profil mempertahankan tanggal efektif target yang sudah tersimpan.
@@ -44,6 +46,5 @@ Target pengalaman dari handoff adalah pencatatan makanan yang sudah dikenal dala
 
 ## Urutan pengembangan berikutnya
 
-1. **Pengingat dan PWA.** Jadwal lokal, izin, deduplikasi, instalasi Android dan pengujian perilaku tanpa koneksi.
-2. **Nutrisi dan evaluasi.** Resep tersimpan, riwayat lanjutan, evaluasi mingguan dan saran progres latihan.
-3. **Rilis umum.** Pemulihan akun, penghapusan akun mandiri, SMTP dan uji perangkat fisik.
+1. **Nutrisi dan evaluasi.** Resep tersimpan, riwayat lanjutan, evaluasi mingguan dan saran progres latihan.
+2. **Rilis umum.** Pemulihan akun, penghapusan akun mandiri, SMTP dan uji perangkat fisik.

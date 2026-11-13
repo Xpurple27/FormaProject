@@ -55,9 +55,11 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
   const weekly = Array.from({ length: elapsedWeeks }, (_, index) => {
     const period = trainingWeek(profile.start_date, index + 1, preference.data?.weekdays ?? DEFAULT_WORKOUT_DAYS);
     const within = (date: string) => date >= period.first && date <= period.last;
+    const completed = sessions.filter(item => within(item.local_date));
+    const full = completed.filter(item => item.completed_set_count === item.prescribed_sets * item.exercise_ids.length).length;
     return { week: index + 1, period, weight: average(weights.filter(item => within(item.date)).map(item => item.value)),
       waist: average(waists.filter(item => within(item.date)).map(item => item.value)),
-      sessions: sessions.filter(item => within(item.local_date)).length };
+      full, partial: completed.length - full };
   }).reverse();
   const existing = measurements.find(item => item.measured_date === query.edit);
   const shownMeasurements = measurements.slice(0, 60);
@@ -106,10 +108,10 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
             <th scope="row" className="py-2 pr-2" title={longDate(item.period.first) + " sampai " + longDate(item.period.last)}>{item.week}</th>
             <td className="p-2">{item.weight === null ? "—" : fmt(item.weight, 2) + " kg"}</td>
             <td className="p-2">{item.waist === null ? "—" : fmt(item.waist, 2) + " cm"}</td>
-            <td className="py-2 pl-2 whitespace-nowrap">{item.sessions} / {item.period.days.length}</td>
+            <td className="py-2 pl-2 whitespace-nowrap">{item.full} / {item.period.days.length}{item.partial > 0 && <span className="block muted">{item.partial} sebagian</span>}</td>
           </tr>)}</tbody>
         </table></div>
-        <p className="caption muted">Sesi selesai dibandingkan dengan jadwal berdasarkan hari latihan di profil saat ini.</p>
+        <p className="caption muted">Sesi penuh dibandingkan dengan jadwal saat ini. Sesi sebagian ditampilkan terpisah, dan set yang tercatat tetap masuk progres kekuatan.</p>
       </> : <p className="muted">Ringkasan program muncul setelah tanggal mulai.</p>}
     </section>
     <section id="kekuatan" className="card grid gap-3">

@@ -1,6 +1,7 @@
 import { getProfile, getSession } from "@/lib/supabase/server";
 import { allRows } from "@/lib/data";
 import { getMeasurements } from "@/lib/training-data";
+import { listReminders } from "@/lib/reminder-data";
 import { progressPhotos } from "@/lib/progress-photos";
 import type { Entry, Food, Target, WorkoutSession, WorkoutSet } from "@/lib/types";
 
@@ -10,7 +11,7 @@ export async function GET() {
   if (!session) return Response.json({ error: "Masuk untuk mengunduh data." }, { status: 401, headers });
   const { client, userId } = session;
   try {
-    const [profile, targets, customFoods, entries, preferences, workoutSessions, workoutSets, bodyMeasurements, photoResult] = await Promise.all([
+    const [profile, targets, customFoods, entries, preferences, workoutSessions, workoutSets, bodyMeasurements, photoResult, reminders] = await Promise.all([
       getProfile(),
       allRows<Target>((start, end) => client.from("nutrition_targets").select("*")
         .eq("user_id", userId).order("effective_from").range(start, end)),
@@ -24,10 +25,11 @@ export async function GET() {
         .order("session_id").order("slot").order("set_number").range(start, end)),
       getMeasurements(client, userId),
       progressPhotos(client, userId),
+      listReminders(client, userId),
     ]);
     if (preferences.error) throw preferences.error;
     return Response.json({ version: 1, exportedAt: new Date().toISOString(), profile, targets, customFoods, entries,
-      workoutPreferences: preferences.data, workoutSessions, workoutSets, bodyMeasurements,
+      workoutPreferences: preferences.data, workoutSessions, workoutSets, bodyMeasurements, reminders,
       progressPhotos: photoResult.available ? photoResult.photos : null }, {
       headers: { ...headers, "Content-Disposition": 'attachment; filename="forma-ekspor.json"' },
     });

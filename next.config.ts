@@ -10,7 +10,11 @@ const config: NextConfig = {
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         { key: "X-Frame-Options", value: "DENY" },
       ] },
-      { source: "/:path(beranda|nutrisi|profil|latihan|progres|orientasi|masuk|daftar|auth/confirm|api/ekspor)", headers: [
+      { source: "/sw.js", headers: [
+        { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        { key: "Content-Security-Policy", value: "default-src 'self'; script-src 'self'" },
+      ] },
+      { source: "/:path(beranda|nutrisi|profil|pengingat|latihan|progres|orientasi|masuk|daftar|auth/confirm|api/ekspor)", headers: [
         { key: "Cache-Control", value: "private, no-store" },
       ] },
     ];

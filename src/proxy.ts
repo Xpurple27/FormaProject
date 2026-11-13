@@ -24,4 +24,4 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/beranda", "/nutrisi", "/profil", "/latihan", "/progres", "/api/progres/foto/:path*", "/orientasi", "/masuk", "/daftar", "/api/ekspor"] };
+export const config = { matcher: ["/beranda", "/nutrisi", "/profil", "/pengingat", "/latihan", "/progres", "/api/progres/foto/:path*", "/orientasi", "/masuk", "/daftar", "/api/ekspor"] };

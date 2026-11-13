@@ -1,14 +1,15 @@
-import { Download } from "lucide-react";
+import Link from "next/link";
+import { Bell, Download } from "lucide-react";
 import { Feedback } from "@/components/feedback";
 import { ProgramStartForm, TargetForm } from "@/components/targets";
-import { SignOutForm } from "@/components/onboarding";
+import { EditProfileForm, SignOutForm } from "@/components/onboarding";
 import { requireProfile } from "@/lib/supabase/server";
 import { getTarget } from "@/lib/data";
 import { localNow, longDate } from "@/lib/dates";
 import { ACTIVITIES, bodyMassIndex, energyEstimate, EQUIPMENT, fmt, GOALS, recommendNutrition } from "@/lib/nutrition";
 
 export const metadata = { title: "Profil" };
-export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ target?: string; mulai?: string }> }) {
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ target?: string; mulai?: string; data?: string }> }) {
   const { client, profile, userId } = await requireProfile();
   const [target, query] = await Promise.all([getTarget(client, userId, localNow(profile.timezone).date), searchParams]);
   const body = {
@@ -31,8 +32,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       {query.target === "tersimpan" && <Feedback message="Target nutrisi tersimpan." />}
       <TargetForm target={target} suggestion={suggestion} key={target?.updated_at ?? "empty"} />
     </section>
-    <section className="card grid gap-4">
+    <section id="data-awal" className="card grid gap-4">
       <h2>Data awal</h2>
+      {query.data === "tersimpan" && <Feedback message="Data profil tersimpan." />}
       <dl className="grid grid-cols-2 gap-4">
         {details.map(([label, value]) => <div key={label} className="min-w-0">
           <dt className="caption muted">{label}</dt><dd className="break-words">{value}</dd>
@@ -40,7 +42,12 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       </dl>
       <p className="caption muted">Data awal · IMT {fmt(bodyMassIndex(body.weight, body.height))} · BMR {fmt(energy.bmr)} kkal · TDEE {fmt(energy.tdee)} kkal/hari.</p>
       {query.mulai === "tersimpan" && <Feedback message="Tanggal mulai tersimpan." />}
+      <EditProfileForm key={JSON.stringify(profile)} profile={profile} />
       <ProgramStartForm key={profile.start_date} date={profile.start_date} />
+    </section>
+    <section className="card grid gap-3">
+      <h2>Pengingat dan pemasangan</h2>
+      <Link href="/pengingat" className="btn btn-secondary justify-self-start"><Bell size={17} aria-hidden="true" />Atur pengingat dan pasang FORMA</Link>
     </section>
     <section className="card grid justify-items-start gap-4">
       <h2>Data dan akun</h2>

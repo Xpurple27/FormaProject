@@ -1,6 +1,6 @@
 # FORMA
 
-FORMA adalah jurnal nutrisi personal dengan antarmuka Bahasa Indonesia. Versi ini mencakup akun, jurnal nutrisi, Workout A/B dan progres 12 minggu. Status fitur, pengujian, dan pekerjaan berikutnya ada di [laporan milestone](docs/MILESTONES.md).
+FORMA adalah jurnal nutrisi personal dengan antarmuka Bahasa Indonesia. Versi ini mencakup akun, jurnal nutrisi, Workout A/B, progres 12 minggu, pengingat dan pemasangan PWA. Status fitur, pengujian, dan pekerjaan berikutnya ada di [laporan milestone](docs/MILESTONES.md).
 
 ## Menjalankan secara lokal
 
@@ -21,9 +21,10 @@ Isi `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` dari k
 3. Buka **Nutrisi** dan cari **Nasi putih matang**. Catat 200 g untuk hasil referensi 260 kkal. Dari **Kelola catatan**, ubah jumlah, tanggal, jam, atau waktu makan, atau hapus catatan.
 4. Di **Latihan**, atur hari latihan, mulai Workout A/B, catat set, dan selesaikan sesi untuk memasukkannya ke riwayat.
 5. Di **Progres**, catat berat atau lingkar pinggang. Grafik, perbandingan set, dan ringkasan mingguan terbentuk dari data yang tersimpan. Galeri foto bersifat privat.
-6. Di **Profil**, ubah target atau tanggal program, unduh ekspor JSON, atau keluar.
+6. Di **Profil**, koreksi data awal, atur target atau tanggal program, dan unduh ekspor JSON.
+7. Buka **Profil → Atur pengingat dan pasang FORMA** untuk memilih jadwal dan melihat petunjuk instalasi.
 
-Jika dependensi Supabase belum disetel, halaman masuk memberi petunjuk penyiapan. FORMA membutuhkan koneksi untuk membaca dan menulis jurnal.
+Jika dependensi Supabase belum disetel, halaman masuk memberi petunjuk penyiapan. FORMA membutuhkan koneksi untuk membuka data privat dan menyimpan catatan. Pada build produksi, service worker menyimpan halaman koneksi terputus yang dapat dibuka saat offline. Pengingat dijalankan selama FORMA terbuka dan terhubung.
 
 ## Pengujian
 
@@ -39,7 +40,11 @@ Tes SQL memakai PGlite dan mengeksekusi migrasi sungguhan dengan peran PostgreSQ
 
 ```sh
 npx playwright install chromium
-npm run test:e2e
+# Gunakan server produksi lokal untuk menguji service worker.
+npm run build
+npm run start
+# Di terminal lain, dengan konfigurasi Supabase lokal yang sama.
+FORMA_TEST_APP_URL=http://localhost:3000 npm run test:e2e
 ```
 
 Suite membuat akun dan catatan uji pada database target. Variabel opsional `FORMA_TEST_APP_URL` menunjuk ke server Next.js yang sudah berjalan. `FORMA_TEST_MAIL_URL` mengganti alamat Mailpit dan `FORMA_TEST_CHROMIUM` memilih binary Chromium. Nilai bawaan Mailpit adalah `http://127.0.0.1:54324`. Gunakan alamat dan kredensial proyek uji lokal.

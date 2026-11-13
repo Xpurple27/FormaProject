@@ -76,7 +76,22 @@ export async function completeOnboarding(_: FormState, form: FormData): Promise<
   });
   if (error) return saveError;
   revalidatePath("/", "layout");
-  redirect("/beranda");
+  redirect("/beranda?awal=1");
+}
+
+export async function updateProfile(_: FormState, form: FormData): Promise<FormState> {
+  const { client, userId } = await requireProfile();
+  const parsed = schemas.profileFields.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { error: "Periksa kembali data profil." };
+  const x = parsed.data;
+  const { data, error } = await client.from("profiles").update({
+    name: x.name, age_years: x.age, sex_for_bmr: x.sex, height_cm: x.height,
+    initial_weight_kg: x.weight, milestone_kg: x.milestone, activity_level: x.activity,
+    goal: x.goal, equipment: x.equipment, timezone: x.timezone,
+  }).eq("user_id", userId).select("user_id").maybeSingle();
+  if (error || !data) return saveError;
+  revalidatePath("/", "layout");
+  redirect("/profil?data=tersimpan#data-awal");
 }
 
 export async function updateTargets(_: FormState, form: FormData): Promise<FormState> {
@@ -167,13 +182,16 @@ export async function changeEntry(_: FormState, form: FormData): Promise<FormSta
   const result = schemas.editEntry.safeParse(Object.fromEntries(form));
   if (!result.success) return invalid;
   const x = result.data;
-  const record = await client.from("food_entries").select("timezone").eq("id", x.id).eq("user_id", userId).maybeSingle();
+  const record = await client.from("food_entries").select("timezone,reference_serving_g").eq("id", x.id).eq("user_id", userId).maybeSingle();
   if (record.error) return saveError;
   if (!record.data) return stale;
   const instant = entryTime(x.date, x.time, record.data.timezone);
   if (!instant) return { error: "Tanggal atau jam tidak valid untuk zona waktu catatan." };
+  if (x.unit === "serving" && !record.data.reference_serving_g) return invalid;
+  const grams = servingGrams(x.quantity, x.unit === "serving" ? record.data.reference_serving_g! : 1);
+  if (grams < 0.01 || grams > 3000) return { error: "Berat makanan harus antara 0,01 dan 3.000 gram." };
   const { data, error } = await client.from("food_entries")
-    .update({ meal_type: x.meal, quantity_g: x.quantity, consumed_at: instant })
+    .update({ meal_type: x.meal, quantity_g: grams, consumed_at: instant })
     .eq("id", x.id).eq("user_id", userId).eq("updated_at", x.version).select("id").maybeSingle();
   if (error) return saveError;
   if (!data) return stale;

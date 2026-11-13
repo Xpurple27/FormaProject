@@ -23,15 +23,17 @@ const validTarget = (input: { calories: number; protein: number; fat: number }) 
   remainingCarbs(input.calories, input.protein, input.fat) >= 0;
 
 export const targets = z.object(targetFields).refine(validTarget);
-export const onboarding = z.object({
-  targetMode: z.enum(["auto", "manual"]), name: string(60), age: number(18, 100, 1).pipe(z.number().int()),
+export const profileFields = z.object({
+  name: string(60), age: number(18, 100, 1).pipe(z.number().int()),
   sex: z.enum(["male", "female"]), height: number(100, 250, 1), weight: number(25, 350, 1),
   milestone: z.union([z.literal("").transform(() => null), number(25, 350, 1)]),
   activity: z.enum(["sedentary", "light", "moderate", "active", "very_active"]),
   goal: z.enum(["recomposition", "maintain", "gain", "track"]),
   equipment: z.enum(["dumbbells", "none", "other"]),
-  timezone: z.enum(["Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura"]), start: date,
+  timezone: z.enum(["Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura"]),
 });
+
+export const onboarding = profileFields.extend({ targetMode: z.enum(["auto", "manual"]), start: date });
 
 export const entryFields = {
   id: z.uuid(), date, time: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/),
@@ -40,7 +42,7 @@ export const entryFields = {
 };
 export const newEntry = z.object({ ...entryFields, food: z.uuid(), unit: z.enum(["gram", "serving"]) });
 export const version = z.iso.datetime({ offset: true });
-export const editEntry = z.object({ ...entryFields, version });
+export const editEntry = z.object({ ...entryFields, version, unit: z.enum(["gram", "serving"]).default("gram") });
 export const deleteEntry = z.object({ id: z.uuid(), date, version });
 
 export const customFood = z.object({

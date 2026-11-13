@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { devices, expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { createClient } from "@supabase/supabase-js";
 
@@ -30,13 +30,19 @@ async function signUp(page: Page, request: APIRequestContext, name: string, star
   const confirmUrl = new URL(confirmation.replaceAll("&amp;", "&"));
   await page.goto(confirmUrl.href);
   await expect(page).toHaveURL(/\/orientasi$/);
-  await page.getByRole("button", { name: "Gunakan profil awal FORMA" }).click();
+  await page.getByLabel("Usia (tahun)").fill("30");
+  await page.getByLabel("Tinggi (cm)").fill("170");
+  await page.getByLabel("Berat awal (kg)").fill("75");
+  await page.getByLabel("Target berat (opsional)").fill("72");
+  await page.getByText("Tujuan, peralatan, dan tanggal mulai", { exact: true }).click();
+  await page.getByLabel("Peralatan").selectOption("dumbbells");
   await page.getByLabel("Nama panggilan").fill(name);
   await page.getByLabel("Tanggal mulai program", { exact: true }).fill(start);
   await expect(page.getByText("230,75 g", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Kalori (kkal)")).toHaveCount(0);
   await page.getByRole("button", { name: "Simpan profil dan target" }).click();
   await expect(page.getByRole("heading", { name: "Halo, " + name + "." })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Catat makanan pertama" })).toBeVisible();
   return email;
 }
 
@@ -107,11 +113,16 @@ test("email confirmation, onboarding, rice CRUD, cross-session persistence and p
   await page.getByRole("button", { name: "Simpan target" }).click();
   await expect(page.getByText("Target nutrisi tersimpan.")).toBeVisible();
   await expect(page.getByLabel("Kalori (kkal)")).toHaveValue("2200");
+  await page.getByText("Ubah data profil", { exact: true }).click();
+  await page.getByLabel("Berat awal (kg)").fill("74");
+  await page.getByRole("button", { name: "Simpan data profil" }).click();
+  await expect(page.getByText("Data profil tersimpan.")).toBeVisible();
   const response = await page.request.get("/api/ekspor");
   expect(response.headers()["cache-control"]).toMatch(/no-store/);
   expect(response.headers()["content-disposition"]).toMatch(/attachment/);
   const json = await response.json();
   expect(json.entries).toEqual([expect.objectContaining({ local_date: previousDay, quantity_g: 150, calories_snapshot: 195 })]);
+  expect(json.profile.initial_weight_kg).toBe(74);
   expect(json.profile.start_date).toBe("2099-02-02");
   expect(json.targets.at(-1).carbs_g).toBe(265.75);
   await page.getByRole("button", { name: "Keluar dari akun" }).click();
@@ -165,15 +176,22 @@ test("custom food, serving conversion, frequent foods, and isolation of two user
   await page.getByRole("button", { name: "Simpan makanan pribadi" }).click();
   await expect(page.getByText(/Makanan pribadi tersimpan/)).toBeVisible();
   const entry = page.getByRole("form", { name: "Tambah catatan makanan" });
-  await entry.getByLabel("Satuan").selectOption("serving");
-  await entry.getByLabel("Jumlah").fill("1.5");
+  await entry.getByRole("button", { name: "1½ porsi", exact: true }).click();
   await expect(entry.getByText("75 kkal")).toBeVisible();
   await entry.getByRole("button", { name: "Simpan ke jurnal" }).click();
   await expect(page.getByTestId("total-calories")).toHaveText("75");
   await page.getByText("Sering dicatat", { exact: true }).click();
   await expect(page.getByRole("button", { name: new RegExp(privateName) }).first()).toBeVisible();
+  await page.getByText("Kelola catatan", { exact: true }).click();
+  const edit = page.getByRole("form", { name: "Ubah " + privateName });
+  await edit.getByRole("button", { name: "½ porsi", exact: true }).click();
+  await expect(edit.getByText("25 kkal", { exact: true })).toBeVisible();
+  await edit.getByRole("button", { name: "Simpan perubahan" }).click();
+  await expect(page.getByText("Perubahan tersimpan.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId("total-calories")).toHaveText("25");
   const data = await (await page.request.get("/api/ekspor")).json();
-  expect(data.entries[0].quantity_g).toBe(37.5);
+  expect(data.entries[0].quantity_g).toBe(12.5);
   const privateFood = data.customFoods[0].id;
   const privateEntry = data.entries[0].id;
   const contextB = await browser.newContext({ baseURL: new URL(page.url()).origin });
@@ -199,7 +217,7 @@ test("custom food, serving conversion, frequent foods, and isolation of two user
     expect((await api.from("food_entries").insert(submission)).error?.code).toBe("22023");
     expect((await api.auth.signInWithPassword({ email: emailA, password })).error).toBeNull();
     const owner = await api.from("food_entries").select("id,quantity_g").eq("id", privateEntry).single();
-    expect(owner.data?.quantity_g).toBe(37.5);
+    expect(owner.data?.quantity_g).toBe(12.5);
     const retry = { ...submission, food_id: riceId };
     expect((await api.from("food_entries").insert(retry)).error).toBeNull();
     expect((await api.from("food_entries").insert(retry)).error?.code).toBe("23505");
@@ -240,21 +258,31 @@ test("Workout A and B session, measured trends and a private progress photo", as
   await page.getByRole("button", { name: "Ganti ke Push-up dinding" }).click();
   await expect(page.getByRole("heading", { name: "Push-up dinding", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Selesaikan sesi" }).click();
+  await page.getByRole("button", { name: "Simpan sesi sebagian" }).click();
   await expect(page.getByText("Sesi selesai dan tercatat di riwayat.")).toBeVisible();
   await expect(page.getByLabel("Pilih workout")).toHaveValue("B");
+  await page.getByText(/Selesai sebagian · 1 dari 8 set/).click();
+  await page.getByText("Koreksi set", { exact: true }).click();
+  await page.getByRole("form", { name: "Set 1", exact: true }).getByLabel("Repetisi", { exact: true }).fill("11");
+  await page.getByRole("button", { name: "Perbarui set" }).click();
+  await expect(page.getByText(/Goblet squat · set 1 · 11 rep/)).toBeVisible();
+  await page.reload();
+  await page.getByText(/Selesai sebagian · 1 dari 8 set/).click();
+  await expect(page.getByText(/Goblet squat · set 1 · 11 rep/)).toBeVisible();
   await page.getByRole("button", { name: "Mulai latihan", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Workout B", exact: true })).toBeVisible();
-  const bSet = page.getByRole("form", { name: "Set 1", exact: true });
+  const bSet = page.locator("#sesi").getByRole("form", { name: "Set 1", exact: true });
   await bSet.getByLabel("Repetisi", { exact: true }).fill("8");
   await bSet.getByRole("button", { name: "Tandai set selesai" }).click();
   await expect(bSet.getByText("Tercatat", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Selesaikan sesi" }).click();
+  await page.getByRole("button", { name: "Simpan sesi sebagian" }).click();
   await expect(page.getByText("Sesi selesai dan tercatat di riwayat.")).toBeVisible();
 
   await page.goto("/progres");
   await expect(page.getByRole("heading", { name: "Progres", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Goblet squat", exact: true })).toBeVisible();
-  await expect(page.getByText("Terakhir · 4 kg/alat · 10 rep")).toBeVisible();
+  await expect(page.getByText("Terakhir · 4 kg/alat · 11 rep")).toBeVisible();
   await page.getByLabel("Tanggal pengukuran").fill(yesterday);
   await page.getByLabel("Berat (kg)", { exact: true }).fill("76");
   await page.getByRole("button", { name: "Simpan pengukuran" }).click();
@@ -293,4 +321,118 @@ test("Workout A and B session, measured trends and a private progress photo", as
   await page.getByRole("button", { name: "Ya, hapus foto" }).click();
   await expect(page.getByText("Foto dihapus.", { exact: true })).toBeVisible();
   expect((await page.request.get(src)).status()).toBe(404);
+});
+
+
+test("Android viewport, persistent reminders, permission fallback, notifications and offline shell", async ({ browser, request, baseURL }) => {
+  const device = await browser.newContext({ ...devices["Pixel 7"], baseURL });
+  try {
+    await device.addInitScript(() => {
+      Object.defineProperty(Notification, "permission", { configurable: true, get: () => "denied" });
+    });
+    const page = await device.newPage();
+    const email = await signUp(page, request, "Pengingat Uji");
+    await page.getByRole("link", { name: "Profil", exact: true }).click();
+    await page.getByRole("link", { name: "Atur pengingat dan pasang FORMA" }).click();
+    await expect(page.getByText(/Izin diblokir/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Izinkan notifikasi" })).toHaveCount(0);
+    const setup = page.getByRole("form", { name: "Buat pengingat" });
+    const current = localNow("Asia/Jakarta").time;
+    await setup.getByLabel("Jenis").selectOption("weight");
+    await setup.getByLabel("Jam").fill(current);
+    await setup.getByRole("button", { name: "Simpan pengingat" }).click();
+    await expect(page.getByText("Pengingat tersimpan.")).toBeVisible();
+    const notice = page.getByRole("region", { name: "Pengingat Timbang berat" });
+    await expect(notice).toBeVisible();
+    await page.reload();
+    await expect(notice).toBeVisible();
+    await notice.getByRole("button", { name: "Tunda 10 menit" }).click();
+    await expect(notice).toHaveCount(0);
+    await expect(page.getByText(/Ditunda sampai/)).toBeVisible();
+    const records = (await (await page.request.get("/api/ekspor")).json()).reminders;
+    expect(records).toHaveLength(1);
+    expect(Date.parse(records[0].snoozed_until)).toBeGreaterThan(Date.now());
+
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+    const api = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    expect((await api.auth.signInWithPassword({ email, password })).error).toBeNull();
+    const reminder = api.from("reminders");
+    const now = Date.now();
+    expect((await reminder.update({
+      snoozed_until: new Date(now - 2000).toISOString(), acknowledged_at: new Date(now - 5000).toISOString(),
+    }).eq("id", records[0].id)).error).toBeNull();
+
+    const allowed = await browser.newContext({ ...devices["Pixel 7"], baseURL, storageState: await device.storageState() });
+    try {
+      await allowed.addInitScript(() => {
+        Object.defineProperty(Notification, "permission", { configurable: true, get: () => "granted" });
+        const store = window as Window & { testNotifications?: string[] };
+        store.testNotifications = [];
+        if (!("serviceWorker" in navigator)) return;
+        const getRegistration = navigator.serviceWorker.getRegistration.bind(navigator.serviceWorker);
+        navigator.serviceWorker.getRegistration = async scope => {
+          const registration = await getRegistration(scope);
+          if (registration) registration.showNotification = async (_title, options) => {
+            store.testNotifications?.push(options?.tag ?? "");
+          };
+          return registration;
+        };
+      });
+      const tabA = await allowed.newPage();
+      const tabB = await allowed.newPage();
+      await Promise.all([tabA.goto("/pengingat"), tabB.goto("/beranda")]);
+      await expect(tabA.getByText("Izin diberikan di perangkat ini.")).toBeVisible();
+      await expect(tabA.getByRole("region", { name: "Pengingat Timbang berat" })).toBeVisible();
+      await expect.poll(() => tabA.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+      const captured = (tab: Page) => tab.evaluate(() => (window as Window & { testNotifications?: string[] }).testNotifications?.length ?? 0);
+      await expect.poll(async () => (await captured(tabA)) + (await captured(tabB)), { timeout: 22000 }).toBe(1);
+      const { data } = await api.from("reminders").select("last_notified_at").eq("id", records[0].id).single();
+      expect(Date.parse(data?.last_notified_at ?? "")).toBe(now - 2000);
+      await tabA.reload();
+      await expect(tabA.getByRole("region", { name: "Pengingat Timbang berat" })).toBeVisible();
+      expect(await captured(tabA)).toBe(0);
+      await tabA.getByRole("button", { name: "Tutup pengingat" }).click();
+      await expect(tabA.getByRole("region", { name: "Pengingat Timbang berat" })).toHaveCount(0);
+    } finally {
+      await allowed.close();
+    }
+    await page.reload();
+    await expect(notice).toHaveCount(0);
+    await page.getByText(/Timbang berat · /).click();
+    const edit = page.getByRole("form", { name: "Ubah pengingat" });
+    await edit.getByLabel("Aktif", { exact: true }).uncheck();
+    await edit.getByRole("button", { name: "Simpan pengingat" }).click();
+    await expect(page.getByText(/Nonaktif/)).toBeVisible();
+    await page.getByText(/Timbang berat · /).click();
+    await page.getByRole("button", { name: "Hapus pengingat" }).click();
+    await page.getByRole("button", { name: "Ya, hapus" }).click();
+    await expect(page.getByText("Pengingat dihapus.")).toBeVisible();
+
+    const audit = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+    expect(audit.violations.map(item => ({ id: item.id, nodes: item.nodes.map(node => node.target) }))).toEqual([]);
+    await page.setViewportSize({ width: 320, height: 720 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const manifest = await (await page.request.get("/manifest.webmanifest")).json();
+    expect(manifest).toEqual(expect.objectContaining({ display: "standalone", scope: "/", start_url: "/beranda" }));
+    expect(manifest.icons.map((icon: { sizes: string; purpose: string }) => [icon.sizes, icon.purpose]))
+      .toEqual([["192x192", "any"], ["512x512", "any"], ["512x512", "maskable"]]);
+    await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+    const cdp = await device.newCDPSession(page);
+    expect((await cdp.send("Page.getInstallabilityErrors")).installabilityErrors).toEqual([]);
+    await cdp.detach();
+    const cached = await page.evaluate(async () => (await (await caches.open("forma-offline-v1")).keys()).map(item => new URL(item.url).pathname));
+    expect(cached).toEqual(["/offline.html"]);
+    await device.setOffline(true);
+    await expect(page.getByText(/Sambungkan kembali sebelum menyimpan/)).toBeVisible();
+    await setup.getByRole("button", { name: "Simpan pengingat" }).click();
+    await expect(page.getByText(/Sedang offline/)).toBeVisible();
+    await page.goto("/beranda");
+    await expect(page.getByRole("heading", { name: "Koneksi terputus" })).toBeVisible();
+    await device.setOffline(false);
+    await page.getByRole("button", { name: "Coba lagi" }).click();
+    await expect(page.getByRole("heading", { name: "Halo, Pengingat Uji." })).toBeVisible();
+  } finally {
+    await device.close();
+  }
 });

@@ -29,6 +29,15 @@ function NutrientPreview({ nutrients, grams }: { nutrients: Nutrients; grams: nu
   </div>;
 }
 
+function PortionChoices({ current, choose }: { current: string; choose: (portion: string) => void }) {
+  return <div className="flex flex-wrap gap-2" role="group" aria-label="Porsi cepat">
+    {([["0.5", "½ porsi"], ["1", "1 porsi"], ["1.5", "1½ porsi"], ["2", "2 porsi"]] as const)
+      .map(([value, label]) => <button type="button" key={value}
+        className={Number(current) === Number(value) ? "btn btn-primary" : "btn btn-secondary"}
+        aria-pressed={Number(current) === Number(value)} onClick={() => choose(value)}>{label}</button>)}
+  </div>;
+}
+
 function FoodChoices({ items, selected, choose }: { items: Food[]; selected?: string; choose: (item: Food) => void }) {
   return <ul className="divide-y divide-[var(--border)]">
     {items.map(item => <li key={item.id}>
@@ -128,6 +137,10 @@ export function FoodForm({ initial, recent, preselected, id, ...dates }: DatePro
           <option value="gram">Gram</option>{food.serving_g && <option value="serving">{food.serving_label}</option>}
         </select></label>
       </div>
+      {food.serving_g && <PortionChoices current={unit === "serving" ? quantity : ""} choose={portion => {
+        setUnit("serving");
+        setQuantity(portion);
+      }} />}
       {canSave && <NutrientPreview nutrients={food} grams={grams} />}
       {unit === "serving" && canSave && <p className="caption muted">Berat yang dicatat · {fmt(grams, 2)} g</p>}
       {!canSave && <p className="caption muted">Masukkan jumlah setara 0,01–3.000 g.</p>}
@@ -169,6 +182,9 @@ export function EditEntryForm({ entry, dates }: { entry: Entry; dates: DateProps
   const remove = useActionForm(removeEntry);
   const [confirm, setConfirm] = useState(false);
   const [quantity, setQuantity] = useState(String(entry.quantity_g));
+  const [unit, setUnit] = useState("gram");
+  const grams = servingGrams(Number(quantity), unit === "serving" ? entry.reference_serving_g ?? 0 : 1);
+  const canSave = grams >= .01 && grams <= 3000;
   const reference = {
     calories: entry.reference_calories, protein_g: entry.reference_protein_g,
     carbs_g: entry.reference_carbs_g, fat_g: entry.reference_fat_g,
@@ -178,12 +194,26 @@ export function EditEntryForm({ entry, dates }: { entry: Entry; dates: DateProps
     <div className="grid gap-3">
       <form {...edit.form} className="grid gap-3" aria-label={"Ubah " + entry.food_name}>
         <input type="hidden" name="id" value={entry.id} /><input type="hidden" name="version" value={entry.updated_at} />
-        <label className="label">Jumlah (g)<input className="field" type="number" name="quantity" value={quantity}
-          onChange={event => setQuantity(event.target.value)} min=".01" max="3000" step=".01" inputMode="decimal" required /></label>
-        {Number(quantity) > 0 && Number(quantity) <= 3000 && <NutrientPreview nutrients={reference} grams={Number(quantity)} />}
+        <input type="hidden" name="unit" value={unit} />
+        {entry.reference_serving_g && <>
+          <p className="caption muted">1 {entry.reference_serving_label} ≈ {fmt(entry.reference_serving_g, 2)} g</p>
+          <PortionChoices current={unit === "serving" ? quantity : ""} choose={portion => {
+            setUnit("serving");
+            setQuantity(portion);
+          }} />
+        </>}
+        <label className="label">{unit === "serving" ? "Jumlah porsi" : "Jumlah (g)"}<input className="field" type="number"
+          name="quantity" value={quantity} onChange={event => setQuantity(event.target.value)} min=".01" max="3000"
+          step=".01" inputMode="decimal" required /></label>
+        {unit === "serving" && canSave && <p className="caption muted">Berat yang dicatat · {fmt(grams, 2)} g</p>}
+        {unit === "serving" && <button type="button" className="btn btn-quiet justify-self-start" onClick={() => {
+          setQuantity(canSave ? String(grams) : String(entry.quantity_g));
+          setUnit("gram");
+        }}>Gunakan gram</button>}
+        {canSave && <NutrientPreview nutrients={reference} grams={grams} />}
         <DateFields {...dates} meal={entry.meal_type} />
         <Feedback {...edit.state} />
-        <button className="btn btn-secondary justify-self-start" disabled={edit.pending || remove.pending}>{edit.pending ? "Menyimpan…" : "Simpan perubahan"}</button>
+        <button className="btn btn-secondary justify-self-start" disabled={edit.pending || remove.pending || !canSave}>{edit.pending ? "Menyimpan…" : "Simpan perubahan"}</button>
       </form>
       {confirm ? <form {...remove.form} className="grid gap-2 rounded-xl border line p-3" aria-label={"Hapus " + entry.food_name}>
         <input type="hidden" name="id" value={entry.id} /><input type="hidden" name="date" value={entry.local_date} />

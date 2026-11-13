@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { CalendarDays, Dumbbell } from "lucide-react";
 import { Feedback } from "@/components/feedback";
-import { ActiveWorkout, ExerciseGuide, ScheduleForm, StartWorkoutForm } from "@/components/workout-controls";
+import { ActiveWorkout, ExerciseGuide, ScheduleForm, SetEditor, StartWorkoutForm } from "@/components/workout-controls";
 import { dayOffset, localNow, longDate } from "@/lib/dates";
 import { fmt } from "@/lib/nutrition";
 import { requireProfile } from "@/lib/supabase/server";
@@ -69,8 +69,10 @@ export default async function WorkoutPage({ searchParams }: { searchParams: Prom
       {!history.length && <p className="muted">Sesi yang selesai akan muncul di sini.</p>}
       {history.map(session => {
         const sets = records.filter(record => record.session_id === session.id);
+        const planned = session.prescribed_sets * session.exercise_ids.length;
+        const complete = sets.length === planned;
         return <details className="border-t line" key={session.id}>
-          <summary><strong>Workout {session.routine}</strong> · <span className="caption muted">{longDate(session.local_date)} · {sets.length} set</span></summary>
+          <summary><strong>Workout {session.routine}</strong> · <span className="caption muted">{longDate(session.local_date)} · {complete ? "Selesai penuh" : "Selesai sebagian"} · {sets.length} dari {planned} set</span></summary>
           <p className="caption muted mb-2">Mulai {localNow(profile.timezone, new Date(session.started_at)).time}
             {" · "}{Math.floor(session.elapsed_seconds / 60)} m {session.elapsed_seconds % 60} dtk aktif
             {session.program_week ? " · Minggu " + session.program_week : " · Sesi bebas"}</p>
@@ -80,6 +82,16 @@ export default async function WorkoutPage({ searchParams }: { searchParams: Prom
               {set.load_kg !== null ? " · " + fmt(set.load_kg, 2) + " kg/alat" : ""}
             </li>)}
           </ul>
+          {!!sets.length && <details className="rounded-xl border line px-3 pb-2">
+            <summary className="caption font-semibold">Koreksi set</summary>
+            <div className="grid gap-3 pb-2 sm:grid-cols-2">
+              {sets.map(set => <div className="grid gap-1" key={set.slot + ":" + set.set_number}>
+                <h3 className="text-sm">{exerciseFor(set.exercise_id).name}</h3>
+                <SetEditor id={session.id} slot={set.slot} set={set.set_number} exerciseId={set.exercise_id}
+                  record={set} correction />
+              </div>)}
+            </div>
+          </details>}
         </details>;
       })}
       {history.length === 30 && <p className="caption muted">Menampilkan 30 sesi terakhir. Riwayat lengkap dapat diekspor dari Profil.</p>}

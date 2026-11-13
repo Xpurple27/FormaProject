@@ -81,8 +81,8 @@ function WorkoutCommand({ id, action, label, slot, exercise, primary = false, di
   </form>;
 }
 
-function SetEditor({ id, slot, set, exerciseId, record }: {
-  id: string; slot: number; set: number; exerciseId: ExerciseId; record?: WorkoutSet;
+export function SetEditor({ id, slot, set, exerciseId, record, correction = false }: {
+  id: string; slot: number; set: number; exerciseId: ExerciseId; record?: WorkoutSet; correction?: boolean;
 }) {
   const { state, pending, form } = useActionForm(saveWorkoutSet);
   const remove = useActionForm(removeWorkoutSet);
@@ -93,6 +93,7 @@ function SetEditor({ id, slot, set, exerciseId, record }: {
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="slot" value={slot} />
       <input type="hidden" name="set" value={set} />
+      {correction && record && <input type="hidden" name="version" value={record.recorded_at} />}
       <div className="flex items-center gap-2 font-semibold">Set {set}
         {record && <span className="accent text-xs flex items-center gap-1"><Check size={15} aria-hidden="true" />Tercatat</span>}
       </div>
@@ -111,7 +112,7 @@ function SetEditor({ id, slot, set, exerciseId, record }: {
       </button>
       <Feedback {...state} />
     </form>
-    {record && <form {...remove.form} className="mt-2">
+    {record && !correction && <form {...remove.form} className="mt-2">
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="slot" value={slot} />
       <input type="hidden" name="set" value={set} />
@@ -147,6 +148,7 @@ function RestTimer() {
 export function ActiveWorkout({ session, records }: { session: WorkoutSession; records: WorkoutSet[] }) {
   const firstIncomplete = session.exercise_ids.findIndex((_, index) => !session.skipped_slots.includes(index + 1)
     && records.filter(record => record.slot === index + 1).length < session.prescribed_sets);
+  const [confirmFinish, setConfirmFinish] = useState(false);
   const [slot, setSlot] = useState(firstIncomplete >= 0 ? firstIncomplete + 1 : 1);
   const id = session.exercise_ids[slot - 1];
   const exercise = exerciseFor(id);
@@ -155,7 +157,8 @@ export function ActiveWorkout({ session, records }: { session: WorkoutSession; r
   const skipped = session.skipped_slots.includes(slot);
   const currentRecords = records.filter(record => record.slot === slot);
   const paused = session.status === "paused";
-  const progress = session.prescribed_sets * (4 - session.skipped_slots.length);
+  const progress = session.prescribed_sets * session.exercise_ids.length;
+  const partial = records.length > 0 && records.length < progress;
   return <section id="sesi" className="card grid gap-4">
     <header className="flex flex-wrap items-start justify-between gap-2">
       <div><p className="eyebrow">{paused ? "Sesi dijeda" : "Sesi aktif"}</p><h2 className="mt-1">Workout {session.routine}</h2></div>
@@ -200,7 +203,14 @@ export function ActiveWorkout({ session, records }: { session: WorkoutSession; r
       <WorkoutCommand id={session.id} action="pause" label="Jeda sesi" />
     </>}
     <div className="grid gap-2 border-t line pt-3">
-      <WorkoutCommand id={session.id} action="finish" label="Selesaikan sesi" primary disabled={!records.length} />
+      {partial && !confirmFinish ? <button className="btn btn-primary" type="button" onClick={() => setConfirmFinish(true)}>
+        Selesaikan sesi
+      </button> : <>
+        {partial && <p className="caption">Simpan sesi sebagai selesai sebagian dengan {records.length} dari {progress} set.</p>}
+        <WorkoutCommand id={session.id} action="finish"
+          label={partial ? "Simpan sesi sebagian" : "Selesaikan sesi"} primary disabled={!records.length} />
+        {partial && <button className="btn btn-quiet" type="button" onClick={() => setConfirmFinish(false)}>Kembali ke sesi</button>}
+      </>}
       {!records.length && <p className="caption muted">Catat minimal satu set untuk menyelesaikan sesi.</p>}
       <details>
         <summary className="caption muted">Batalkan sesi</summary>

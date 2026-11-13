@@ -54,12 +54,13 @@ Build dijalankan dengan Node 24 dan Next.js 16.4.6. Pengujian browser memakai Ch
 - [ ] Uji konfirmasi email hosted, sesi setelah refresh, dan penyimpanan dari ponsel fisik. Ukur waktu pencatatan makanan yang sering dipakai.
 - [x] Library gerakan, program Dumbbell A/B, dan penyimpanan set latihan.
 - [x] Progres tubuh, kekuatan, dan galeri privat.
-- [ ] Tambahkan pengingat dan PWA. Verifikasi instalasi dan perilaku tanpa koneksi.
+- [x] Tambahkan jadwal pengingat, PWA, dan halaman cadangan offline.
+- [ ] Uji pemasangan dan notifikasi di HP Android fisik.
 - [ ] Selesaikan pemulihan akun dan penghapusan akun mandiri sebelum rilis umum.
 
 ## Batasan versi ini
 
-Aplikasi membutuhkan koneksi. Baseline dan zona waktu disetel saat onboarding, sedangkan target nutrisi bisa diperbarui lewat Profil. Porsi hanya muncul pada makanan dengan definisi gram. Impor dari prototype, resep tersimpan, pengingat, dan PWA berada pada backlog.
+Aplikasi membutuhkan koneksi untuk data akun. Porsi cepat tersedia jika makanan memiliki takaran acuan. Entri sebelum pembaruan yang belum memiliki snapshot takaran dapat dikoreksi dalam gram. Impor dari prototype, resep tersimpan, pencatatan offline, dan push saat aplikasi tertutup berada pada backlog.
 
 
 ## 3 · Workout A/B
@@ -74,3 +75,22 @@ Aplikasi membutuhkan koneksi. Baseline dan zona waktu disetel saat onboarding, s
 - Berat awal dan target profil tampil terpisah dari berat terakhir yang diukur. Perbandingan kekuatan memakai set terbaik pada dua sesi terakhir yang memuat gerakan sejenis.
 - Galeri privat memakai bucket Supabase dengan kebijakan folder pemilik. Unggahan gambar dinormalisasi ke JPEG. Ekspor akun menyertakan riwayat latihan, pengukuran, dan metadata galeri.
 - Uji unit dan SQL menambah verifikasi jadwal, grafik, rata-rata tanpa nilai fiktif, transisi sesi, kepemilikan, dan kebijakan foto privat. Skenario Playwright mencakup Workout A dan B, jeda, refresh, pergantian gerakan, pengukuran dan alur foto. Pengujian aplikasi lokal memakai PostgreSQL, Supabase Auth, PostgREST dan layanan Storage uji. Konfigurasi proyek lokal dengan Supabase CLI bisa menggunakan Storage Supabase langsung.
+
+
+## 5 · Pengingat, PWA, dan perbaikan alur pengguna
+
+- Buka **Profil → Atur pengingat dan pasang FORMA** untuk membuat jadwal makan, latihan, timbang berat, atau waktu tidur. Setiap jadwal menyimpan hari pilihan, jam lokal, dan status aktif di akun. Pengguna dapat menunda 10 menit, menutup kejadian yang tampil, menonaktifkan, atau menghapus jadwal.
+- Pengingat aktif dapat muncul selama dua jam dari waktu yang dijadwalkan. Jam mengikuti zona profil. Saat FORMA terbuka dan online, perangkat yang memberi izin dapat menerima notifikasi browser. Server mencatat klaim setiap kejadian agar beberapa tab atau perangkat tidak mengirim ulang. Izin ditolak tetap memungkinkan pengingat di dalam aplikasi.
+- Manifest dan ikon mendukung pemasangan dari browser. Service worker menyimpan halaman publik untuk koneksi terputus. Cache tersebut tidak menyimpan jurnal, foto, atau respons privat. Penyimpanan catatan memerlukan internet.
+- Pengaturan awal meminta data tubuh pengguna, lalu menawarkan tindakan **Catat makanan pertama**. Profil mengizinkan koreksi data awal. Untuk makanan dengan acuan porsi, ½, 1, 1½ dan 2 porsi bisa dipilih saat mencatat dan mengoreksi entri baru. Riwayat latihan menampilkan set tercatat dari total rencana, membedakan sesi penuh dan sebagian, serta mendukung koreksi hasil set yang sudah ditutup.
+- Untuk menguji pada HP fisik, pasang dari Chrome Android, buka dari ikon layar utama, buat jadwal dekat jam sekarang, uji izin ditolak dan diizinkan, tunda pengingat, lalu matikan dan sambungkan kembali jaringan. Push ketika aplikasi tertutup dan penyimpanan offline berada di luar cakupan rilis ini.
+
+| Pemeriksaan Fase 5 | Hasil |
+| --- | --- |
+| Lint, TypeScript, dan build Next.js | Lulus |
+| Vitest | 19/19 lulus |
+| SQL dengan migrasi proyek | 11/11 lulus, termasuk isolasi akun dan klaim notifikasi tunggal |
+| Playwright | 4/4 lulus. Profil Pixel 7 mencakup kelayakan pemasangan lewat Chrome, simulasi izin, dua tab, tunda, tutup, dan pemulihan koneksi |
+| Aksesibilitas otomatis | Tidak ada temuan aturan axe yang dijalankan pada Nutrisi dan Pengingat |
+| Supabase hosted | Migrasi diterapkan. RLS aktif, akses anonim ditolak, dan jumlah set terisi untuk semua sesi yang sudah ditutup |
+| Android fisik | Belum diuji |
