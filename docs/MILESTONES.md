@@ -103,3 +103,9 @@ Aplikasi membutuhkan koneksi untuk data akun. Porsi cepat tersedia jika makanan 
 - Layar latihan menampilkan jumlah set yang tersimpan terhadap rencana dan pintasan ke jadwal serta riwayat.
 
 Referensi pola antarmuka mobile [Cronometer](https://support.cronometer.com/hc/en-us/articles/360018593112-Mobile-Diary-Overview), [MacroFactor](https://help.macrofactorapp.com/en/articles/218-how-to-configure-your-food-timeline), [Hevy](https://help.hevyapp.com/hc/en-us/articles/33106320824727-Everything-You-Need-to-Know-About-the-Hevy-App-2026-Features-Guide), dan PWA [Tally](https://github.com/GeneArnold/tally).
+
+## Susun sekali makan
+
+- Dari **Catat → Susun sekali makan**, pilih beberapa bahan, lauk, atau minuman, masukkan jumlah dalam gram atau takaran acuan, dan lihat estimasi total kalori dan makro. Nama menu bersifat opsional.
+- Komponen dicatat sekaligus dan dikelompokkan di riwayat. Setiap komponen tetap dapat diedit atau dihapus, dan total mengikuti isi catatan. Penyimpanan memakai satu operasi basis data dengan pencegahan duplikasi.
+- Tambah telur dadar polos, nugget ayam matang, dan kopi susu manis ke katalog. Takaran kopi susu memakai resep acuan yang ditampilkan di aplikasi. Formulir manual diberi nama **Tambah dari label kemasan**.

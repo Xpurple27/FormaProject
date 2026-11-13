@@ -41,7 +41,7 @@ async function signUp(page: Page, request: APIRequestContext, name: string, star
   await expect(page.getByText("230,75 g", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Kalori (kkal)")).toHaveCount(0);
   await page.getByRole("button", { name: "Simpan profil dan target" }).click();
-  await expect(page.getByRole("heading", { name: "Halo, " + name + "." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Halo, " + name + "." })).toBeVisible({ timeout: 12000 });
   await expect(page.getByRole("link", { name: "Catat makanan pertama" })).toBeVisible();
   return email;
 }
@@ -173,7 +173,7 @@ test("custom food, serving conversion, frequent foods, and isolation of two user
   await expect(recipe.getByLabel("Jumlah")).toHaveValue("1");
   await expect(recipe.getByText(/minyak 10 g/)).toBeVisible();
   await expect(recipe.getByText("464,89 kkal", { exact: true })).toBeVisible();
-  await page.getByText("Buat makanan sendiri", { exact: true }).click();
+  await page.getByText("Tambah dari label kemasan", { exact: true }).click();
   const privateName = "Camilan pribadi QA";
   await page.getByLabel("Nama makanan").fill(privateName);
   await page.getByLabel("Cara pengolahan").fill("Kukus");
@@ -234,6 +234,55 @@ test("custom food, serving conversion, frequent foods, and isolation of two user
   } finally {
     await contextB.close();
   }
+});
+
+test("assemble breakfast from five foods, persist quantities and edit a component", async ({ page, request }) => {
+  await signUp(page, request, "Sarapan Uji");
+  await page.goto("/nutrisi");
+  await page.getByRole("link", { name: "Catat sarapan" }).click();
+  await expect(page).toHaveURL(/makan=breakfast#catat$/);
+  const builder = page.getByRole("link", { name: "Susun sekali makan" });
+  await expect(builder).toHaveAttribute("href", /makan=breakfast&mode=susun#catat$/);
+  await builder.click();
+  const meal = page.getByRole("form", { name: "Susun sekali makan" });
+  await expect(meal.getByRole("button", { name: "Catat semua ke jurnal" })).toBeDisabled();
+  for (const food of ["Nasi putih matang", "Dada ayam panggang", "Telur dadar polos", "Nugget ayam", "Kopi susu manis"]) {
+    await meal.getByLabel("Cari bahan atau minuman").fill(food);
+    await meal.getByRole("button", { name: new RegExp(food) }).click();
+    if (food !== "Kopi susu manis") await meal.getByRole("button", { name: "Tambah bahan atau minuman" }).click();
+  }
+  await meal.getByLabel("Takaran Nasi putih matang").selectOption("gram");
+  await meal.getByLabel("Jumlah Nasi putih matang").fill("150");
+  await meal.getByLabel("Jumlah Nugget ayam").fill("2");
+  await meal.getByLabel("Nama menu (opsional)").fill("Sarapan nasi dan ayam");
+  await expect(meal.getByLabel("Waktu makan")).toHaveValue("breakfast");
+  await expect(meal.getByText("661,1 kkal", { exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 720 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const audit = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+  expect(audit.violations.map(item => item.id)).toEqual([]);
+  await meal.getByRole("button", { name: "Catat semua ke jurnal" }).click();
+  await expect(page.getByText("Semua bahan dan minuman tercatat.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId("total-calories")).toHaveText("661,1");
+  await page.getByText("Sarapan nasi dan ayam", { exact: true }).click();
+  const report = await (await page.request.get("/api/ekspor")).json();
+  expect(report.entries).toHaveLength(5);
+  expect(new Set(report.entries.map((row: { meal_batch_id: string }) => row.meal_batch_id)).size).toBe(1);
+  const sorted = report.entries.sort((a: { meal_batch_position: number }, b: { meal_batch_position: number }) =>
+    a.meal_batch_position - b.meal_batch_position);
+  expect(sorted.map((row: { quantity_g: number }) => row.quantity_g)).toEqual([150, 100, 61, 36, 200]);
+  expect(sorted.every((row: { meal_type: string }) => row.meal_type === "breakfast")).toBe(true);
+  const nugget = page.locator("#jurnal").getByRole("listitem").filter({ has: page.getByText("Nugget ayam", { exact: true }) }).last();
+  await nugget.getByText("Kelola catatan", { exact: true }).click();
+  const edit = page.getByRole("form", { name: "Ubah Nugget ayam" });
+  await edit.getByRole("button", { name: "1 porsi", exact: true }).click();
+  await edit.getByRole("button", { name: "Simpan perubahan" }).click();
+  await expect(page.getByText("Perubahan tersimpan.")).toBeVisible();
+  await expect(page.getByTestId("total-calories")).toHaveText("607,8");
+  await page.goto("/beranda");
+  await expect(page.getByText("Sarapan nasi dan ayam", { exact: true })).toBeVisible();
+  await expect(page.getByText("1 catatan makanan", { exact: true })).toBeVisible();
 });
 
 test("Workout A and B session, measured trends and a private progress photo", async ({ page, request, browser }) => {

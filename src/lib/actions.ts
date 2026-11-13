@@ -177,6 +177,66 @@ export async function addEntry(_: FormState, form: FormData): Promise<FormState>
   redirect("/nutrisi?tanggal=" + x.date + "&status=ditambah#jurnal");
 }
 
+export async function addMeal(_: FormState, form: FormData): Promise<FormState> {
+  const { client, profile, userId } = await requireProfile();
+  const parsed = schemas.mealBatch.safeParse(Object.fromEntries(form));
+  const raw = form.get("items");
+  if (!parsed.success || typeof raw !== "string" || raw.length > 5000) return invalid;
+
+  let decoded: unknown;
+  try {
+    decoded = JSON.parse(raw);
+  } catch {
+    return invalid;
+  }
+  const items = schemas.mealItems.safeParse(decoded);
+  if (!items.success) return { error: "Pilih bahan dan isi jumlah yang valid untuk tiap bahan." };
+
+  const x = parsed.data;
+  const instant = entryTime(x.date, x.time, profile.timezone);
+  if (!instant) return { error: "Tanggal atau jam tidak valid untuk zona waktu profil." };
+  const ids = [...new Set(items.data.map(item => item.food))];
+  const { data: foods, error: foodError } = await client.from("foods").select("id,serving_g").in("id", ids);
+  if (foodError) return saveError;
+  if (foods.length !== ids.length) return { error: "Ada bahan yang sudah tidak tersedia. Periksa kembali pilihanmu." };
+
+  const servings = new Map(foods.map(food => [food.id, food.serving_g]));
+  const rows = items.data.map((item, index) => ({
+    id: item.id,
+    food_id: item.food,
+    consumed_at: instant,
+    meal_type: x.meal,
+    meal_batch_id: x.id,
+    meal_batch_name: x.name || null,
+    meal_batch_position: index + 1,
+    quantity_g: servingGrams(item.quantity, item.unit === "serving" ? servings.get(item.food) ?? 0 : 1),
+  }));
+  if (rows.some(row => row.quantity_g < .01 || row.quantity_g > 3000)) {
+    return { error: "Gunakan takaran yang tersedia atau masukkan 0,01–3.000 gram per bahan." };
+  }
+  const { error } = await client.from("food_entries").insert(rows);
+  let savedDate = x.date;
+  if (error) {
+    if (error.code !== "23505") return saveError;
+    const { data: existing, error: readError } = await client.from("food_entries")
+      .select("id,food_id,consumed_at,meal_type,meal_batch_name,meal_batch_position,quantity_g,local_date")
+      .eq("user_id", userId).eq("meal_batch_id", x.id).limit(schemas.MAX_MEAL_ITEMS + 1);
+    if (readError) return saveError;
+    const byId = new Map(existing.map(row => [row.id, row]));
+    const same = existing.length === rows.length && rows.every(row => {
+      const stored = byId.get(row.id);
+      return stored?.food_id === row.food_id && stored.quantity_g === row.quantity_g
+        && stored.meal_type === row.meal_type && stored.meal_batch_name === row.meal_batch_name
+        && stored.meal_batch_position === row.meal_batch_position
+        && Date.parse(stored.consumed_at) === Date.parse(row.consumed_at);
+    });
+    if (!same) return { error: "Periksa riwayat sebelum menyimpan lagi. Susunan ini mungkin sudah tercatat." };
+    savedDate = existing[0].local_date;
+  }
+  refreshDiary();
+  redirect("/nutrisi?tanggal=" + savedDate + "&status=menu#jurnal");
+}
+
 export async function changeEntry(_: FormState, form: FormData): Promise<FormState> {
   const { client, userId } = await requireProfile();
   const result = schemas.editEntry.safeParse(Object.fromEntries(form));

@@ -3,7 +3,7 @@ import { ArrowUpRight, BookOpen, Dumbbell, Plus, Scale, Utensils } from "lucide-
 import { NutritionSummary } from "@/components/nutrition-summary";
 import { dailyNutrition } from "@/lib/data";
 import { localNow, longDate } from "@/lib/dates";
-import { fmt, MEALS, sumEntries } from "@/lib/nutrition";
+import { fmt, groupDiaryEntries, MEALS, sumEntries } from "@/lib/nutrition";
 import { trainingOverview } from "@/lib/training-data";
 import { nextRoutine, programWeek, trainingWeek } from "@/lib/workout";
 import { requireProfile } from "@/lib/supabase/server";
@@ -21,6 +21,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
   const week = programWeek(profile.start_date, day);
   const scheduled = week !== null && trainingWeek(profile.start_date, week, weekdays).days.includes(day);
   const weight = measurement.data?.weight_kg;
+  const journal = groupDiaryEntries(entries);
   return <div className="dashboard grid gap-4 md:gap-6">
     <header className="page-heading">
       <p className="page-date">{longDate(day)}</p>
@@ -54,17 +55,22 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
     <section className="card dashboard-journal">
       <div className="flex items-start justify-between gap-3">
         <div><h2>Jurnal hari ini</h2>
-          <p className="caption muted mt-1">{entries.length ? entries.length + " catatan makanan" : "Belum ada makanan yang dicatat."}</p>
+          <p className="caption muted mt-1">{journal.length ? journal.length + " catatan makanan" : "Belum ada makanan yang dicatat."}</p>
         </div>
         <Link href="/nutrisi#jurnal" className="btn btn-quiet !px-2" aria-label="Lihat seluruh jurnal"><ArrowUpRight size={19} aria-hidden="true" /></Link>
       </div>
-      {entries.length > 0 && <ul className="mt-2 divide-y divide-[var(--border)]">
-        {entries.slice(-4).reverse().map(entry => <li className="journal-preview-row" key={entry.id}>
-          <span className="tile-icon" aria-hidden="true"><Utensils size={15} /></span>
-          <div className="min-w-0 flex-1"><strong className="break-words">{entry.food_name}</strong>
-            <p className="caption muted">{MEALS[entry.meal_type]} · {fmt(entry.quantity_g, 2)} g</p></div>
-          <b className="shrink-0 numeric">{fmt(entry.calories_snapshot)} <span className="muted font-medium">kkal</span></b>
-        </li>)}
+      {journal.length > 0 && <ul className="mt-2 divide-y divide-[var(--border)]">
+        {journal.slice(-4).reverse().map(items => {
+          const entry = items[0];
+          return <li className="journal-preview-row" key={entry.meal_type + ":" + (entry.meal_batch_id ?? entry.id)}>
+            <span className="tile-icon" aria-hidden="true"><Utensils size={15} /></span>
+            <div className="min-w-0 flex-1">
+              <strong className="break-words">{entry.meal_batch_id ? entry.meal_batch_name ?? "Susunan makanan" : entry.food_name}</strong>
+              <p className="caption muted">{entry.meal_batch_id ? items.length + " komponen" : MEALS[entry.meal_type] + " · " + fmt(entry.quantity_g, 2) + " g"}</p>
+            </div>
+            <b className="shrink-0 numeric">{fmt(sumEntries(items).calories)} <span className="muted font-medium">kkal</span></b>
+          </li>;
+        })}
       </ul>}
     </section>
   </div>;

@@ -112,3 +112,9 @@ erDiagram
   PROFILES ||--o{ BODY_MEASUREMENTS : mencatat
   PROFILES ||--o{ PROGRESS_PHOTOS : memiliki
 ```
+
+## Susunan makanan
+
+Satu kali makan memakai ID kelompok dan urutan komponen pada jurnal. Server mengambil nilai acuan bahan dari katalog yang dapat diakses akun. Seluruh komponen ditulis dalam satu insert PostgREST, dan setiap baris tetap memakai trigger snapshot nutrisi serta RLS jurnal. Ekspor JSON memuat identitas, nama, dan urutan kelompok. Menyimpan susunan saat ini mencatat konsumsi pada tanggal yang dipilih.
+
+Acuan katalog tambahan mencakup telur dadar USDA SR28 01130 dan nugget matang USDA Standard Reference 05321. Kopi susu acuan mencampur 90 g kopi seduh USDA 14209, 100 g susu full cream USDA 01077, dan 10 g gula USDA 19335. Berat 18 g per nugget adalah takaran acuan dan dapat berbeda menurut merek. [USDA Standard Reference](https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/beltsville-human-nutrition-research-center/methods-and-application-of-food-composition-laboratory/mafcl-site-pages/sr11-sr28/)

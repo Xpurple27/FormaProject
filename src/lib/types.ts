@@ -18,6 +18,7 @@ export type Food = Nutrients & {
 export type Entry = {
   id: string; user_id: string; food_id: string; consumed_at: string; local_date: string; timezone: string;
   meal_type: "breakfast" | "lunch" | "dinner" | "snack"; quantity_g: number;
+  meal_batch_id: string | null; meal_batch_name: string | null; meal_batch_position: number | null;
   food_name: string; preparation: string; source: string; source_url: string | null;
   reference_serving_g: number | null; reference_serving_label: string | null;
   reference_calories: number; reference_protein_g: number; reference_carbs_g: number; reference_fat_g: number;
@@ -48,7 +49,8 @@ type Table<Row, Insert, Update = Partial<Insert>> = {
   Row: Row; Insert: Insert; Update: Update; Relationships: [];
 };
 
-type EntryInput = Pick<Entry, "id" | "food_id" | "meal_type" | "quantity_g" | "consumed_at">;
+type EntryInput = Pick<Entry, "id" | "food_id" | "meal_type" | "quantity_g" | "consumed_at">
+  & Partial<Pick<Entry, "meal_batch_id" | "meal_batch_name" | "meal_batch_position">>;
 type OnboardingArgs = {
   p_name: string; p_age: number; p_sex: string; p_height: number; p_weight: number;
   p_milestone: number | null; p_activity: string; p_goal: string; p_equipment: string;

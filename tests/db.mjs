@@ -45,8 +45,8 @@ try {
   for (const file of (await readdir(migrations)).filter(name => name.endsWith(".sql")).sort()) {
     await db.exec(await readFile(new URL(file, migrations), "utf8"));
   }
-  await check("migrations and 20 catalog entries with reproducible portion sizes", async () => {
-    assert.equal((await query("select count(*)::int as count from public.foods"))[0].count, 20);
+  await check("migrations and 23 catalog entries with reproducible portion sizes", async () => {
+    assert.equal((await query("select count(*)::int as count from public.foods"))[0].count, 23);
     const [friedRice] = await query("select serving_g, calories * serving_g / 100 as kcal, portion_note from public.foods where name='Nasi goreng + telur'");
     assert.equal(Number(friedRice.serving_g), 275);
     assert.ok(Math.abs(Number(friedRice.kcal) - 464.9) <= .02);
@@ -117,6 +117,23 @@ try {
     await assert.rejects(onboard("Anonymous"), /permission denied/);
     await setup(userA);
     assert.equal((await query("delete from public.food_entries where id=$1 returning id", [entry])).length, 1);
+  });
+  await check("meal batch insert is atomic, private, and protected against duplicate positions", async () => {
+    await setup(userA);
+    const batch = crypto.randomUUID();
+    const first = crypto.randomUUID();
+    const second = crypto.randomUUID();
+    const insert = otherFood => query(
+      "insert into public.food_entries(id,food_id,consumed_at,meal_type,quantity_g,meal_batch_id,meal_batch_name,meal_batch_position) values ($1,$2,'2024-01-01 00:01Z','breakfast',150,$3,'Sarapan uji',1), ($4,$5,'2024-01-01 00:01Z','breakfast',36,$3,'Sarapan uji',2) returning id",
+      [first, rice, batch, second, otherFood]);
+    const count = async () => (await query("select * from public.food_entries where meal_batch_id=$1", [batch])).length;
+    await assert.rejects(insert(crypto.randomUUID()), /Food is unavailable/);
+    assert.equal(await count(), 0);
+    assert.equal((await insert("abf24e78-0a44-4d15-94a9-c736c03c1b05")).length, 2);
+    await assert.rejects(insert("abf24e78-0a44-4d15-94a9-c736c03c1b05"), /duplicate key/);
+    assert.equal(await count(), 2);
+    await setup(userB);
+    assert.equal(await count(), 0);
   });
   await check("workout lifecycle, set deduplication and cross-user isolation", async () => {
     await setup(userA);

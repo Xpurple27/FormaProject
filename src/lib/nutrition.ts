@@ -42,6 +42,17 @@ export function sumEntries(entries: Entry[]): Nutrients {
   }), { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 });
 }
 
+export function groupDiaryEntries(entries: Entry[]) {
+  const groups = new Map<string, Entry[]>();
+  for (const entry of entries) {
+    const key = entry.meal_batch_id ? entry.meal_type + ":" + entry.meal_batch_id : entry.id;
+    const group = groups.get(key);
+    if (group) group.push(entry);
+    else groups.set(key, [entry]);
+  }
+  return [...groups.values()].map(group => group.sort((a, b) => (a.meal_batch_position ?? 0) - (b.meal_batch_position ?? 0)));
+}
+
 export function remainingCarbs(calories: number, protein: number, fat: number) {
   return (Math.round(calories * 10) - 4 * Math.round(protein * 10) - 9 * Math.round(fat * 10)) / 40;
 }

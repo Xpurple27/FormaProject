@@ -41,6 +41,20 @@ export const entryFields = {
   quantity: number(0.01, 3000, 2),
 };
 export const newEntry = z.object({ ...entryFields, food: z.uuid(), unit: z.enum(["gram", "serving"]) });
+export const MAX_MEAL_ITEMS = 20;
+export const mealItems = z.array(z.object({
+  id: entryFields.id,
+  food: z.uuid(),
+  quantity: entryFields.quantity,
+  unit: z.enum(["gram", "serving"]),
+})).min(1).max(MAX_MEAL_ITEMS).refine(items => new Set(items.map(item => item.id)).size === items.length);
+export const mealBatch = z.object({
+  id: entryFields.id,
+  date,
+  time: entryFields.time,
+  meal: entryFields.meal,
+  name: z.string().trim().max(80),
+});
 export const version = z.iso.datetime({ offset: true });
 export const editEntry = z.object({ ...entryFields, version, unit: z.enum(["gram", "serving"]).default("gram") });
 export const deleteEntry = z.object({ id: z.uuid(), date, version });
