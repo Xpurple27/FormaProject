@@ -45,12 +45,17 @@ try {
   for (const file of (await readdir(migrations)).filter(name => name.endsWith(".sql")).sort()) {
     await db.exec(await readFile(new URL(file, migrations), "utf8"));
   }
-  await check("migrations and 23 catalog entries with reproducible portion sizes", async () => {
-    assert.equal((await query("select count(*)::int as count from public.foods"))[0].count, 23);
-    const [friedRice] = await query("select serving_g, calories * serving_g / 100 as kcal, portion_note from public.foods where name='Nasi goreng + telur'");
-    assert.equal(Number(friedRice.serving_g), 275);
-    assert.ok(Math.abs(Number(friedRice.kcal) - 464.9) <= .02);
-    assert.match(friedRice.portion_note, /minyak 10 g/);
+  await check("requested catalog, serving assumptions and archived defaults", async () => {
+    const counts = await query("select catalog_group, count(*)::int as count from public.foods group by catalog_group order by catalog_group");
+    assert.deepEqual(Object.fromEntries(counts.map(row => [row.catalog_group, row.count])),
+      { archive: 18, drink: 18, ingredient: 5, main: 16, side: 9, snack: 10 });
+    const [bakso] = await query("select serving_g, serving_label, portion_note from public.foods where name='Bakso goreng'");
+    assert.equal(Number(bakso.serving_g), 60);
+    assert.equal(bakso.serving_label, "tusuk");
+    assert.match(bakso.portion_note, /4 butir/);
+    const [siomay] = await query("select serving_g, calories * serving_g / 100 as kcal from public.foods where name='Siomay + saus kacang'");
+    assert.equal(Number(siomay.serving_g), 105);
+    assert.ok(Math.abs(Number(siomay.kcal) - 196.31) < .01);
   });
   await check("atomic onboarding and retry", async () => {
     await setup(userA);
@@ -134,6 +139,30 @@ try {
     assert.equal(await count(), 2);
     await setup(userB);
     assert.equal(await count(), 0);
+  });
+  await check("private snacks preserve unknown nutrients and bulk selection rolls back on stale or foreign rows", async () => {
+    await setup(userA);
+    const snack = crypto.randomUUID();
+    const dish = crypto.randomUUID();
+    const call = () => query("select public.log_private_snack($1,'Jajan uji','snack','2024-01-01 17:01Z',null,2,80,null,null,null)", [snack]);
+    await call();
+    await call();
+    const [row] = await query("select * from public.food_entries where id=$1", [snack]);
+    assert.deepEqual(row.known_nutrients, ["calories"]);
+    assert.equal(row.portion_weight_known, false);
+    assert.equal(Number(row.calories_snapshot), 160);
+    await add(rice, dish);
+    const exact = await query("select id, updated_at::text::timestamptz::text as stamp from public.food_entries where id in ($1,$2)", [snack, dish]);
+    const items = exact.map(v => ({ id: v.id, version: v.stamp }));
+    const remove = list => query("select public.delete_diary_selection('2024-01-02',$1::jsonb) as count", [JSON.stringify(list)]);
+    const bad = [{ ...items[0], version: "2024-01-02T00:00:00Z" }, items[1]];
+    await assert.rejects(remove(bad), /Selection changed/);
+    assert.equal((await query("select id from public.food_entries where id in ($1,$2)", [snack, dish])).length, 2);
+    await setup(userB);
+    await assert.rejects(remove(items), /Selection changed/);
+    await setup(userA);
+    assert.equal((await remove(items))[0].count, 2);
+    assert.equal((await query("select id from public.food_entries where id in ($1,$2)", [snack, dish])).length, 0);
   });
   await check("workout lifecycle, set deduplication and cross-user isolation", async () => {
     await setup(userA);

@@ -59,12 +59,15 @@ export const version = z.iso.datetime({ offset: true });
 export const editEntry = z.object({ ...entryFields, version, unit: z.enum(["gram", "serving"]).default("gram") });
 export const deleteEntry = z.object({ id: z.uuid(), date, version });
 
-export const customFood = z.object({
-  id: z.uuid(), name: string(100), preparation: string(60),
-  category: z.enum(["karbohidrat", "lauk", "buah", "sayuran", "minuman", "lainnya"]),
-  servingLabel: z.string().trim().max(60), serving: z.union([z.literal("").transform(() => null), number(0.01, 3000, 2)]),
-  calories: number(0, 950, 2), protein: number(0, 100, 2),
-  carbs: number(0, 100, 2), fat: number(0, 100, 2),
-  source: z.string().trim().max(140),
-}).refine(input => Boolean(input.servingLabel) === (input.serving !== null))
-  .refine(input => Math.round(input.protein * 100) + Math.round(input.carbs * 100) + Math.round(input.fat * 100) <= 10000);
+const optionalNumber = (max: number) => z.union([z.literal("").transform(() => null), number(0, max, 2)]);
+export const quickSnack = z.object({
+  ...entryFields, name: string(100), weight: z.union([z.literal("").transform(() => null), number(.01, 3000, 2)]),
+  calories: optionalNumber(9500), protein: optionalNumber(3000), carbs: optionalNumber(3000), fat: optionalNumber(3000),
+}).refine(input => {
+  const weight = input.weight ?? 100;
+  return input.quantity * weight <= 3000 && (input.calories ?? 0) * 100 <= 950 * weight
+    && [input.protein, input.carbs, input.fat].reduce<number>((sum, n) => sum + (n ?? 0), 0) <= weight;
+});
+export const MAX_DELETE_ENTRIES = 150;
+export const diarySelection = z.array(z.object({ id: z.uuid(), version }))
+  .min(1).max(MAX_DELETE_ENTRIES).refine(items => new Set(items.map(item => item.id)).size === items.length);

@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { addMeal } from "@/lib/actions";
-import { fmt, scaleNutrition, servingGrams } from "@/lib/nutrition";
+import { fmt, missingNutrients, scaleNutrition, servingGrams } from "@/lib/nutrition";
 import type { Food, Nutrients } from "@/lib/types";
 import { MAX_MEAL_ITEMS } from "@/lib/validation";
 import { Feedback } from "./feedback";
@@ -81,11 +81,11 @@ export function MealBuilder({ id, initial, recent, dates }: { id: string; initia
                 updateItem(item.id, { unit: serving ? "serving" : "gram", quantity: String(quantity) });
               }}>
               {item.food.serving_g && <option value="serving">{item.food.serving_label}</option>}
-              <option value="gram">Gram</option>
+              {item.food.portion_weight_known && <option value="gram">Gram</option>}
             </select></label>
           </div>
           {item.food.serving_g && <>
-            <p className="caption muted">1 {item.food.serving_label} ≈ {fmt(item.food.serving_g, 2)} g</p>
+            {item.food.portion_weight_known && <p className="caption muted">1 {item.food.serving_label} ≈ {fmt(item.food.serving_g, 2)} g</p>}
             <PortionChoices current={item.unit === "serving" ? item.quantity : ""} choose={quantity =>
               updateItem(item.id, { unit: "serving", quantity })} />
           </>}
@@ -101,7 +101,7 @@ export function MealBuilder({ id, initial, recent, dates }: { id: string; initia
       {items.length > 0 && <>
         <div className="grid gap-2">
           <h3>Estimasi total</h3>
-          <NutrientTotals values={totals} />
+          <NutrientTotals values={totals} missing={missingNutrients(items.map(item => item.food))} />
           {!canSave && <p className="caption muted">Periksa jumlah setiap bahan agar setara dengan 0,01–3.000 g.</p>}
         </div>
         <label className="label">Nama menu (opsional)

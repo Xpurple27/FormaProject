@@ -11,11 +11,14 @@ export type Profile = {
   equipment: "dumbbells" | "none" | "other"; timezone: string; start_date: string; created_at: string;
 };
 export type Target = Nutrients & { user_id: string; effective_from: string; updated_at: string };
+export type CatalogGroup = "main" | "side" | "snack" | "drink" | "ingredient" | "personal" | "archive";
 export type Food = Nutrients & {
+  catalog_group: CatalogGroup; known_nutrients: (keyof Nutrients)[]; portion_weight_known: boolean;
   id: string; user_id: string | null; name: string; category: string; preparation: string;
   serving_label: string | null; serving_g: number | null; portion_note: string | null; source: string; source_url: string | null; created_at: string;
 };
 export type Entry = {
+  known_nutrients: (keyof Nutrients)[]; portion_weight_known: boolean;
   id: string; user_id: string; food_id: string; consumed_at: string; local_date: string; timezone: string;
   meal_type: "breakfast" | "lunch" | "dinner" | "snack"; quantity_g: number;
   meal_batch_id: string | null; meal_batch_name: string | null; meal_batch_position: number | null;
@@ -62,7 +65,7 @@ export type Database = {
     Tables: {
       profiles: Table<Profile, Omit<Profile, "created_at" | "user_id">>;
       nutrition_targets: Table<Target, Omit<Target, "carbs_g">>;
-      foods: Table<Food, Omit<Food, "user_id" | "created_at" | "source_url" | "portion_note">>;
+      foods: Table<Food, Omit<Food, "user_id" | "created_at" | "source_url" | "portion_note" | "catalog_group" | "known_nutrients" | "portion_weight_known">>;
       food_entries: Table<Entry, EntryInput, Partial<Omit<EntryInput, "id" | "food_id">>>;
       workout_preferences: Table<WorkoutPreference, WorkoutPreference>;
       workout_sessions: Table<WorkoutSession, WorkoutStart>;
@@ -73,6 +76,10 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      delete_diary_selection: { Args: { p_day: string; p_items: { id: string; version: string }[] }; Returns: number };
+      log_private_snack: { Args: { p_id: string; p_name: string; p_meal: string; p_time: string;
+        p_quantity: number; p_weight: number | null; p_calories: number | null; p_protein: number | null;
+        p_carbs: number | null; p_fat: number | null }; Returns: string };
       complete_onboarding: { Args: OnboardingArgs; Returns: undefined };
       change_workout: { Args: { p_id: string; p_action: string; p_slot?: number; p_exercise?: string }; Returns: undefined };
     };

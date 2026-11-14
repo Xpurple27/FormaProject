@@ -47,10 +47,12 @@ async function signUp(page: Page, request: APIRequestContext, name: string, star
 }
 
 async function logRice(page: Page, grams: number) {
-  await page.goto("/nutrisi");
-  await page.getByLabel("Cari makanan").fill("nasi");
+  await page.goto("/nutrisi?tambah=1#catat");
+  await page.getByLabel("Kategori").selectOption("ingredient");
+  await page.getByLabel("Cari makanan").fill("nasi putih matang");
   await page.getByRole("button", { name: /Nasi putih matang/ }).click();
   const entry = page.getByRole("form", { name: "Tambah catatan makanan" });
+  await entry.getByLabel("Satuan").selectOption("gram");
   await entry.getByLabel("Jumlah").fill(String(grams));
   await entry.getByLabel("Jam").fill("00:01");
   await entry.getByRole("button", { name: "Simpan ke jurnal" }).click();
@@ -66,7 +68,7 @@ test("email confirmation, onboarding, rice CRUD, cross-session persistence and p
   const email = await signUp(page, request, "Pengguna Uji A");
 
   await page.getByRole("navigation", { name: "Navigasi utama" }).getByRole("link", { name: "Catat makanan" }).click();
-  await expect(page).toHaveURL(/\/nutrisi#catat$/);
+  await expect(page).toHaveURL(/\/nutrisi\?tambah=1#catat$/);
   await expect(page.getByLabel("Cari makanan")).toBeInViewport();
   await logRice(page, 200);
   await expect(page.getByTestId("total-calories")).toHaveText("260");
@@ -78,6 +80,7 @@ test("email confirmation, onboarding, rice CRUD, cross-session persistence and p
   const previousDay = new URL(page.url()).searchParams.get("tanggal")!;
   await page.getByRole("link", { name: "Catat sarapan" }).click();
   await expect(page).toHaveURL(new RegExp("tanggal=" + previousDay + "&makan=breakfast#catat$"));
+  await page.getByLabel("Kategori").selectOption("ingredient");
   await page.getByLabel("Cari makanan").fill("nasi");
   await page.getByRole("button", { name: /Nasi putih matang/ }).click();
   const breakfast = page.getByRole("form", { name: "Tambah catatan makanan" });
@@ -162,44 +165,50 @@ test("email confirmation, onboarding, rice CRUD, cross-session persistence and p
 test("custom food, serving conversion, frequent foods, and isolation of two users", async ({ page, request, browser }) => {
   const emailA = await signUp(page, request, "Pemilik Makanan");
   await page.goto("/nutrisi");
-  await page.getByRole("combobox", { name: "Kategori", exact: true }).selectOption("lauk");
+  await expect(page.getByLabel("Cari makanan")).toHaveCount(0);
+  await page.getByRole("link", { name: "Catat camilan" }).click();
+  await expect(page.getByLabel("Kategori")).toHaveValue("snack");
+  const searchRequests: string[] = [];
+  const trackSearch = (req: import("@playwright/test").Request) => {
+    if (req.isNavigationRequest() || req.method() === "POST") searchRequests.push(req.url());
+  };
+  page.on("request", trackSearch);
+  await page.getByLabel("Kategori").selectOption("side");
   await expect(page.getByRole("button", { name: /Tahu goreng/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /Nasi putih matang/ })).toHaveCount(0);
   await page.getByRole("combobox", { name: "Kategori", exact: true }).selectOption("");
   await page.getByLabel("Cari makanan").fill("nasi goreng telur");
-  await page.getByRole("button", { name: /Nasi goreng \+ telur/ }).click();
+  await page.getByRole("button", { name: /Nasi goreng \+ telur dadar/ }).click();
+  page.off("request", trackSearch);
+  expect(searchRequests).toEqual([]);
   const recipe = page.getByRole("form", { name: "Tambah catatan makanan" });
   await expect(recipe.getByLabel("Satuan")).toHaveValue("serving");
   await expect(recipe.getByLabel("Jumlah")).toHaveValue("1");
-  await expect(recipe.getByText(/minyak 10 g/)).toBeVisible();
-  await expect(recipe.getByText("464,89 kkal", { exact: true })).toBeVisible();
-  await page.getByText("Tambah dari label kemasan", { exact: true }).click();
+  await expect(recipe.getByText(/minyak 8 g/)).toBeVisible();
+  await expect(recipe.getByText("443,55 kkal", { exact: true })).toBeVisible();
+  await page.getByText("Tambah jajanan sendiri", { exact: true }).click();
   const privateName = "Camilan pribadi QA";
-  await page.getByLabel("Nama makanan").fill(privateName);
-  await page.getByLabel("Cara pengolahan").fill("Kukus");
-  await page.getByLabel("Kalori (kkal)").fill("200");
-  await page.getByLabel("Protein (g)").fill("10");
-  await page.getByLabel("Karbohidrat (g)").fill("30");
-  await page.getByLabel("Lemak (g)").fill("4");
-  await page.getByLabel("Nama porsi (opsional)").fill("potong");
-  await page.getByLabel("Berat per porsi (g)").fill("25");
-  await page.getByRole("button", { name: "Simpan makanan pribadi" }).click();
-  await expect(page.getByText(/Makanan pribadi tersimpan/)).toBeVisible();
-  const entry = page.getByRole("form", { name: "Tambah catatan makanan" });
-  await entry.getByRole("button", { name: "1½ porsi", exact: true }).click();
-  await expect(entry.getByText("75 kkal")).toBeVisible();
-  await entry.getByRole("button", { name: "Simpan ke jurnal" }).click();
-  await expect(page.getByTestId("total-calories")).toHaveText("75");
-  await page.getByText("Sering dicatat", { exact: true }).click();
-  await expect(page.getByRole("button", { name: new RegExp(privateName) }).first()).toBeVisible();
+  const snack = page.getByRole("form", { name: "Tambah jajanan sendiri" });
+  await snack.getByLabel("Nama jajanan").fill(privateName);
+  await snack.getByText("Rincian gizi per porsi (opsional)").click();
+  await snack.getByLabel("Berat satu porsi (g)").fill("25");
+  await snack.getByLabel("Kalori (kkal)").fill("50");
+  await snack.getByRole("button", { name: "Catat jajanan" }).click();
+  await expect(page.getByText("Jajanan tercatat.")).toBeVisible();
+  await expect(page.getByTestId("total-calories")).toHaveText("50");
+  await expect(page.getByText("Total hanya mencakup nilai gizi yang diketahui.")).toBeVisible();
   await page.getByText("Kelola catatan", { exact: true }).click();
   const edit = page.getByRole("form", { name: "Ubah " + privateName });
   await edit.getByRole("button", { name: "½ porsi", exact: true }).click();
-  await expect(edit.getByText("25 kkal", { exact: true })).toBeVisible();
+  await expect(edit.getByText("25 kkal")).toBeVisible();
   await edit.getByRole("button", { name: "Simpan perubahan" }).click();
   await expect(page.getByText("Perubahan tersimpan.")).toBeVisible();
   await page.reload();
   await expect(page.getByTestId("total-calories")).toHaveText("25");
+  await page.goto("/nutrisi?tambah=1#catat");
+  await page.getByLabel("Kategori").selectOption("personal");
+  await page.getByText("Sering dicatat", { exact: true }).click();
+  await expect(page.getByRole("button", { name: new RegExp(privateName) }).first()).toBeVisible();
   const data = await (await page.request.get("/api/ekspor")).json();
   expect(data.entries[0].quantity_g).toBe(12.5);
   const privateFood = data.customFoods[0].id;
@@ -209,7 +218,8 @@ test("custom food, serving conversion, frequent foods, and isolation of two user
     const pageB = await contextB.newPage();
     const emailB = await signUp(pageB, request, "Akun Terpisah");
     await expect(pageB.getByTestId("total-calories")).toHaveText("0");
-    await pageB.goto("/nutrisi");
+    await pageB.goto("/nutrisi?tambah=1#catat");
+    await pageB.getByLabel("Kategori").selectOption("personal");
     await pageB.getByLabel("Cari makanan").fill(privateName);
     await expect(pageB.getByText(/Tidak ada hasil/)).toBeVisible();
     const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -246,10 +256,10 @@ test("assemble breakfast from five foods, persist quantities and edit a componen
   await builder.click();
   const meal = page.getByRole("form", { name: "Susun sekali makan" });
   await expect(meal.getByRole("button", { name: "Catat semua ke jurnal" })).toBeDisabled();
-  for (const food of ["Nasi putih matang", "Dada ayam panggang", "Telur dadar polos", "Nugget ayam", "Kopi susu manis"]) {
+  for (const food of ["Nasi putih matang", "Dada ayam panggang", "Telur dadar polos", "Nugget ayam", "Kopi susu panas"]) {
     await meal.getByLabel("Cari bahan atau minuman").fill(food);
     await meal.getByRole("button", { name: new RegExp(food) }).click();
-    if (food !== "Kopi susu manis") await meal.getByRole("button", { name: "Tambah bahan atau minuman" }).click();
+    if (food !== "Kopi susu panas") await meal.getByRole("button", { name: "Tambah bahan atau minuman" }).click();
   }
   await meal.getByLabel("Takaran Nasi putih matang").selectOption("gram");
   await meal.getByLabel("Jumlah Nasi putih matang").fill("150");
@@ -283,6 +293,21 @@ test("assemble breakfast from five foods, persist quantities and edit a componen
   await page.goto("/beranda");
   await expect(page.getByText("Sarapan nasi dan ayam", { exact: true })).toBeVisible();
   await expect(page.getByText("1 catatan makanan", { exact: true })).toBeVisible();
+  await page.goto("/nutrisi");
+  await page.getByRole("link", { name: "Pilih catatan" }).click();
+  await page.getByRole("checkbox", { name: /Nugget ayam/ }).check();
+  await page.getByRole("checkbox", { name: /Kopi susu panas/ }).check();
+  await page.getByRole("button", { name: "Hapus terpilih (2)", exact: true }).click();
+  await page.getByRole("button", { name: "Ya, hapus terpilih" }).click();
+  await expect(page.getByText("Catatan terpilih dihapus.")).toBeVisible();
+  await expect(page.getByTestId("total-calories")).toHaveText("453,9");
+  await page.getByRole("link", { name: "Catat camilan" }).click();
+  await page.getByText("Tambah jajanan sendiri", { exact: true }).click();
+  await page.getByLabel("Nama jajanan").fill("Jajanan pasar uji");
+  await page.getByRole("button", { name: "Catat jajanan" }).click();
+  await expect(page.getByText("Jajanan tercatat.")).toBeVisible();
+  await expect(page.getByTestId("total-calories")).toHaveText("≥ 453,9");
+  await expect(page.getByText("Kalori belum diketahui", { exact: true })).toBeVisible();
 });
 
 test("Workout A and B session, measured trends and a private progress photo", async ({ page, request, browser }) => {

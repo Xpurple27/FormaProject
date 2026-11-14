@@ -38,7 +38,7 @@ export function Navigation({ mobile = false }: { mobile?: boolean }) {
   return <nav aria-label="Navigasi utama" className={mobile ? "bottom-nav" : "mt-10 grid gap-1"}>
     {mobile ? <>
       {destinations.slice(0, 2).map(item)}
-      <Link href="/nutrisi#catat" aria-label="Catat makanan" className="nav-link nav-add">
+      <Link prefetch={false} href="/nutrisi?tambah=1#catat" aria-label="Catat makanan" className="nav-link nav-add">
         <span className="nav-icon"><Plus size={22} aria-hidden="true" /></span>Catat
       </Link>
       {destinations.slice(2).map(item)}

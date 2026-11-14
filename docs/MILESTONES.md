@@ -109,3 +109,12 @@ Referensi pola antarmuka mobile [Cronometer](https://support.cronometer.com/hc/e
 - Dari **Catat → Susun sekali makan**, pilih beberapa bahan, lauk, atau minuman, masukkan jumlah dalam gram atau takaran acuan, dan lihat estimasi total kalori dan makro. Nama menu bersifat opsional.
 - Komponen dicatat sekaligus dan dikelompokkan di riwayat. Setiap komponen tetap dapat diedit atau dihapus, dan total mengikuti isi catatan. Penyimpanan memakai satu operasi basis data dengan pencegahan duplikasi.
 - Tambah telur dadar polos, nugget ayam matang, dan kopi susu manis ke katalog. Takaran kopi susu memakai resep acuan yang ditampilkan di aplikasi. Formulir manual diberi nama **Tambah dari label kemasan**.
+
+## Katalog pribadi dan jurnal PWA
+
+- Katalog bawaan berisi 16 makanan, 9 tambahan, 10 jajanan, dan 18 minuman. Lima bahan dasar tersedia di kategori **Bahan** untuk menyusun satu kali makan. Pilihan bawaan lama diarsipkan, sehingga jurnal dan nilai gizi yang sudah dicatat tetap bisa dibaca serta diedit.
+- Katalog dimuat saat pengguna membuka pencatatan lewat **+**. Pencarian dan kategori bekerja di browser. Menu dibatasi 24 hasil per tampilan dan formulir edit catatan dirender saat dibuka. Pengukuran respons pada PWA terpasang di HP fisik masih diperlukan.
+- **Pilih catatan** menghapus beberapa entri dari satu tanggal dalam satu transaksi. Jika salah satu entri berubah sejak dibuka, penghapusan dibatalkan seluruhnya.
+- **Tambah jajanan sendiri** langsung membuat catatan dan menyimpan jajanan ke kategori **Pribadi**. Berat dan rincian gizi bersifat opsional. Ringkasan menandai total sebagian saat ada nilai yang belum diketahui.
+- Acuan siomay kecil ialah empat butir @ 20 g, dengan tambahan 25 g saus kacang dan/atau 80 g kuah sesuai pilihan. Acuan bakso goreng ialah satu tusuk isi empat butir (56 g bakso + 4 g minyak terserap). Porsi dapat diedit. Rincian nilai per porsi dan sumber pembanding tersedia di layar pencatatan.
+- Verifikasi lokal lulus untuk lint, TypeScript, build produksi, 19 unit test, 13 skenario basis data, dan 5 skenario Playwright. Uji browser mencakup katalog tertutup pada awalnya, pencarian lokal, transaksi hapus banyak, penyimpanan jajanan dengan gizi yang belum diketahui, serta tampilan dan pemasangan PWA dalam simulasi Android.

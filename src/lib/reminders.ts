@@ -2,7 +2,7 @@ import { Temporal } from "@js-temporal/polyfill";
 import { dayOffset, localNow, toInstant } from "./dates";
 
 export const REMINDER_KINDS = {
-  meal: { label: "Makan", message: "Catat makananmu di jurnal nutrisi.", href: "/nutrisi#catat", action: "Catat makan" },
+  meal: { label: "Makan", message: "Catat makananmu di jurnal nutrisi.", href: "/nutrisi?tambah=1#catat", action: "Catat makan" },
   workout: { label: "Latihan", message: "Buka jadwal atau lanjutkan sesimu.", href: "/latihan", action: "Buka latihan" },
   weight: { label: "Timbang berat", message: "Catat hasil timbang di Progres.", href: "/progres#pengukuran", action: "Catat berat" },
   bedtime: { label: "Waktu tidur", message: "Saatnya bersiap untuk tidur.", href: null, action: null },

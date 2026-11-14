@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dayOffset, localNow, toInstant, validDate } from "../src/lib/dates";
 import { bodyMassIndex, energyEstimate, recommendNutrition, remainingCarbs, scaleNutrition, servingGrams, sumEntries } from "../src/lib/nutrition";
-import { customFood, newEntry, targets } from "../src/lib/validation";
+import { newEntry, quickSnack, targets } from "../src/lib/validation";
 import type { Entry } from "../src/lib/types";
 
 describe("nutrition", () => {
@@ -68,9 +68,10 @@ describe("input validation", () => {
     expect(targets.safeParse({ calories: "2100", protein: "0", fat: "70" }).success).toBe(true);
   });
   it("requires both parts of a serving definition", () => {
-    const fields = { id: crypto.randomUUID(), name: "Roti", preparation: "Panggang", category: "lainnya", calories: "15", protein: "0", carbs: "1", fat: "1", source: "" };
-    expect(customFood.safeParse({ ...fields, servingLabel: "iris", serving: "" }).success).toBe(false);
-    expect(customFood.safeParse({ ...fields, servingLabel: "iris", serving: "25" }).success).toBe(true);
-    expect(customFood.safeParse({ ...fields, protein: "100", servingLabel: "", serving: "" }).success).toBe(false);
+    const fields = { id: crypto.randomUUID(), date: "2026-11-12", time: "11:00", meal: "snack",
+      name: "Jajanan uji", quantity: "2", weight: "", calories: "", protein: "", carbs: "", fat: "" };
+    expect(quickSnack.safeParse(fields).data).toMatchObject({ calories: null, weight: null, quantity: 2 });
+    expect(quickSnack.safeParse({ ...fields, weight: "25", calories: "80", carbs: "12,5" }).data).toMatchObject({ calories: 80, carbs: 12.5 });
+    expect(quickSnack.safeParse({ ...fields, weight: "25", fat: "30" }).success).toBe(false);
   });
 });

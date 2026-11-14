@@ -31,28 +31,18 @@ export async function getTarget(client: Client, userId: string, day: string): Pr
   return data;
 }
 
-export async function findFoods(client: Client, search: string, category: string) {
-  let query = client.from("foods").select("*").order("name").order("id").limit(30);
-  for (const term of search.split(/[\s+]+/).filter(Boolean).slice(0, 8)) {
-    const escaped = term.replace(/[\\%_]/g, "\\$&");
-    query = query.ilike("name", "%" + escaped + "%");
-  }
-  if (category) query = query.eq("category", category);
-  const { data, error } = await query;
-  if (error) throw new Error("Could not load FORMA food catalog");
-  return data;
+export function getCatalog(client: Client) {
+  return allRows<Food>((start, end) => client.from("foods").select("*").neq("catalog_group", "archive")
+    .order("name").order("id").range(start, end));
 }
 
-export async function recentFoods(client: Client, userId: string) {
+export async function recentFoods(client: Client, userId: string, catalog: Promise<Food[]>) {
   const { data, error } = await client.from("food_entries").select("food_id").eq("user_id", userId)
     .order("consumed_at", { ascending: false }).order("id", { ascending: false }).limit(100);
   if (error) throw new Error("Could not load recently logged foods");
   const counts = new Map<string, number>();
   for (const { food_id } of data) counts.set(food_id, (counts.get(food_id) ?? 0) + 1);
-  const ids = [...counts.keys()].sort((a, b) => counts.get(b)! - counts.get(a)!).slice(0, 5);
-  if (!ids.length) return [];
-  const foods = await client.from("foods").select("*").in("id", ids);
-  if (foods.error) throw new Error("Could not load recent food details");
-  const byId = new Map(foods.data.map(food => [food.id, food]));
-  return ids.map(id => byId.get(id)).filter((food): food is Food => Boolean(food));
+  const byId = new Map((await catalog).map(food => [food.id, food]));
+  const ids = [...counts.keys()].filter(id => byId.has(id)).sort((a, b) => counts.get(b)! - counts.get(a)!).slice(0, 5);
+  return ids.map(id => byId.get(id)!);
 }

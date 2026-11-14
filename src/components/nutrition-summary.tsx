@@ -9,9 +9,10 @@ const macros = [
   { key: "fat_g", label: "Lemak", color: "var(--fat)" },
 ] as const;
 
-export function NutritionSummary({ totals, target, label }: { totals: Nutrients; target: Target | null; label: string }) {
-  const percent = target ? Math.round(totals.calories / target.calories * 100) : null;
-  const diff = target ? target.calories - totals.calories : null;
+export function NutritionSummary({ totals, target, label, missing = [] }: { totals: Nutrients; target: Target | null; label: string; missing?: (keyof Nutrients)[] }) {
+  const missingCalories = missing.includes("calories");
+  const percent = target && !missingCalories ? Math.round(totals.calories / target.calories * 100) : null;
+  const diff = target && !missingCalories ? target.calories - totals.calories : null;
   return <section aria-label="Ringkasan nutrisi" className="card energy-card">
     <div className="energy-overview">
       <div className="min-w-0">
@@ -19,7 +20,7 @@ export function NutritionSummary({ totals, target, label }: { totals: Nutrients;
           <Flame size={17} className="accent shrink-0" aria-hidden="true" />{label}
         </div>
         <p className="energy-total numeric">
-          <strong data-testid="total-calories">{fmt(totals.calories)}</strong>
+          <strong data-testid="total-calories">{missingCalories ? totals.calories > 0 ? "≥ " + fmt(totals.calories) : "—" : fmt(totals.calories)}</strong>
           <span className="muted text-sm">kkal</span>
         </p>
         <p className="caption muted">{target ? <>Target {fmt(target.calories)} kkal</> : "Target belum berlaku pada tanggal ini."}</p>
@@ -30,17 +31,19 @@ export function NutritionSummary({ totals, target, label }: { totals: Nutrients;
       {percent !== null && <div className="ring numeric" style={{ "--fill": Math.min(100, percent) + "%" } as CSSProperties}
         role="img" aria-label={fmt(percent, 0) + "% dari target kalori"}><span>{percent > 999 ? "999+" : percent}%</span></div>}
     </div>
+    {missing.length > 0 && <p className="caption muted mt-2">Total hanya mencakup nilai gizi yang diketahui.</p>}
     <dl className="macro-grid">
       {macros.map(({ key, label, color }) => {
         const limit = target?.[key];
         const value = totals[key];
+        const incomplete = missing.includes(key);
         return <div key={key} className="macro-item" style={{ "--fill-color": color } as CSSProperties}>
           <dt><span className="macro-dot" aria-hidden="true" />{label}</dt>
           <dd className="numeric">
-            <strong>{fmt(value)}</strong> <span className="muted text-xs">g</span>
-            {limit !== undefined && <span className="macro-target muted" title={value > limit
+            <strong>{incomplete ? value > 0 ? "≥ " + fmt(value) : "—" : fmt(value)}</strong> <span className="muted text-xs">g</span>
+            {!incomplete && limit !== undefined && <span className="macro-target muted" title={value > limit
               ? fmt(value - limit) + " g di atas target" : fmt(limit - value) + " g tersisa"}> / {fmt(limit)} g</span>}
-            {limit !== undefined && limit > 0 && <progress className="meter mt-1.5"
+            {!incomplete && limit !== undefined && limit > 0 && <progress className="meter mt-1.5"
               aria-label={"Progres " + label.toLowerCase()} value={Math.min(limit, value)} max={limit} />}
           </dd>
         </div>;

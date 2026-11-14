@@ -3,10 +3,15 @@ import type { Entry, Nutrients, Profile } from "./types";
 export const MEALS = {
   breakfast: "Sarapan", lunch: "Makan siang", dinner: "Makan malam", snack: "Camilan",
 } as const;
-export const CATEGORIES = {
-  karbohidrat: "Sumber karbohidrat", lauk: "Lauk", buah: "Buah",
-  sayuran: "Sayuran", minuman: "Minuman", lainnya: "Lainnya",
+export const CATALOG_GROUPS = {
+  main: "Makanan", side: "Tambahan", snack: "Jajanan", drink: "Minuman",
+  ingredient: "Bahan", personal: "Pribadi",
 } as const;
+export const NUTRIENT_KEYS = ["calories", "protein_g", "carbs_g", "fat_g"] as const;
+export function missingNutrients(items: { known_nutrients: (keyof Nutrients)[] }[]) {
+  return NUTRIENT_KEYS.filter(key => items.some(item => !item.known_nutrients.includes(key)));
+}
+
 export const ACTIVITIES = {
   sedentary: { label: "Minim aktivitas", factor: 1.2 },
   light: { label: "Ringan", factor: 1.375 },
@@ -40,6 +45,16 @@ export function sumEntries(entries: Entry[]): Nutrients {
     calories: total.calories + entry.calories_snapshot, protein_g: total.protein_g + entry.protein_snapshot,
     carbs_g: total.carbs_g + entry.carbs_snapshot, fat_g: total.fat_g + entry.fat_snapshot,
   }), { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 });
+}
+
+export function recordedCalories(amount: number, isPartial: boolean) {
+  if (isPartial && amount === 0) return "Kalori belum diketahui";
+  return (isPartial ? "≥ " : "") + fmt(amount) + " kkal";
+}
+
+export function entryAmount(entry: Entry) {
+  return entry.portion_weight_known ? fmt(entry.quantity_g, 2) + " g"
+    : fmt(entry.quantity_g / (entry.reference_serving_g ?? 100), 2) + " porsi";
 }
 
 export function groupDiaryEntries(entries: Entry[]) {

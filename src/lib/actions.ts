@@ -2,11 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { z } from "zod";
-import { CATEGORIES, recommendNutrition, servingGrams } from "./nutrition";
+import { recommendNutrition, servingGrams } from "./nutrition";
 import { localNow, toInstant } from "./dates";
-import { findFoods } from "./data";
-import { createClient, getSession, requireProfile, requireSession } from "./supabase/server";
+import { createClient, requireProfile, requireSession } from "./supabase/server";
 import { supabaseConfig } from "./supabase/env";
 import * as schemas from "./validation";
 
@@ -121,21 +119,6 @@ export async function updateProgramStart(_: FormState, form: FormData): Promise<
   redirect("/profil?mulai=tersimpan");
 }
 
-const searchSchema = z.object({
-  query: z.string().trim().max(100),
-  category: z.string().refine(value => !value || Object.hasOwn(CATEGORIES, value)),
-});
-export async function searchFoods(query: string, category: string) {
-  const parsed = searchSchema.safeParse({ query, category });
-  const session = await getSession();
-  if (!session || !parsed.success) return { error: "Pencarian tidak dapat diproses." };
-  try {
-    return { foods: await findFoods(session.client, parsed.data.query, parsed.data.category) };
-  } catch {
-    return { error: "Katalog belum bisa dimuat. Coba lagi." };
-  }
-}
-
 function refreshDiary() {
   revalidatePath("/nutrisi");
   revalidatePath("/beranda");
@@ -157,9 +140,9 @@ export async function addEntry(_: FormState, form: FormData): Promise<FormState>
   const x = result.data;
   const instant = entryTime(x.date, x.time, profile.timezone);
   if (!instant) return { error: "Tanggal atau jam tidak valid untuk zona waktu profil." };
-  const { data: food, error: foodError } = await client.from("foods").select("serving_g").eq("id", x.food).maybeSingle();
+  const { data: food, error: foodError } = await client.from("foods").select("serving_g,portion_weight_known").neq("catalog_group", "archive").eq("id", x.food).maybeSingle();
   if (foodError) return saveError;
-  if (!food || (x.unit === "serving" && !food.serving_g)) return { error: "Makanan atau satuan porsi tidak tersedia." };
+  if (!food || (x.unit === "serving" ? !food.serving_g : !food.portion_weight_known)) return { error: "Makanan atau satuan porsi tidak tersedia." };
   const grams = servingGrams(x.quantity, x.unit === "serving" ? food.serving_g! : 1);
   if (grams < 0.01 || grams > 3000) return { error: "Berat makanan harus antara 0,01 dan 3.000 gram." };
   const { error } = await client.from("food_entries").insert({
@@ -196,11 +179,11 @@ export async function addMeal(_: FormState, form: FormData): Promise<FormState> 
   const instant = entryTime(x.date, x.time, profile.timezone);
   if (!instant) return { error: "Tanggal atau jam tidak valid untuk zona waktu profil." };
   const ids = [...new Set(items.data.map(item => item.food))];
-  const { data: foods, error: foodError } = await client.from("foods").select("id,serving_g").in("id", ids);
+  const { data: foods, error: foodError } = await client.from("foods").select("id,serving_g,portion_weight_known").neq("catalog_group", "archive").in("id", ids);
   if (foodError) return saveError;
   if (foods.length !== ids.length) return { error: "Ada bahan yang sudah tidak tersedia. Periksa kembali pilihanmu." };
 
-  const servings = new Map(foods.map(food => [food.id, food.serving_g]));
+  const byFood = new Map(foods.map(food => [food.id, food]));
   const rows = items.data.map((item, index) => ({
     id: item.id,
     food_id: item.food,
@@ -209,7 +192,7 @@ export async function addMeal(_: FormState, form: FormData): Promise<FormState> 
     meal_batch_id: x.id,
     meal_batch_name: x.name || null,
     meal_batch_position: index + 1,
-    quantity_g: servingGrams(item.quantity, item.unit === "serving" ? servings.get(item.food) ?? 0 : 1),
+    quantity_g: servingGrams(item.quantity, item.unit === "serving" ? byFood.get(item.food)?.serving_g ?? 0 : Number(byFood.get(item.food)?.portion_weight_known)),
   }));
   if (rows.some(row => row.quantity_g < .01 || row.quantity_g > 3000)) {
     return { error: "Gunakan takaran yang tersedia atau masukkan 0,01–3.000 gram per bahan." };
@@ -242,12 +225,12 @@ export async function changeEntry(_: FormState, form: FormData): Promise<FormSta
   const result = schemas.editEntry.safeParse(Object.fromEntries(form));
   if (!result.success) return invalid;
   const x = result.data;
-  const record = await client.from("food_entries").select("timezone,reference_serving_g").eq("id", x.id).eq("user_id", userId).maybeSingle();
+  const record = await client.from("food_entries").select("timezone,reference_serving_g,portion_weight_known").eq("id", x.id).eq("user_id", userId).maybeSingle();
   if (record.error) return saveError;
   if (!record.data) return stale;
   const instant = entryTime(x.date, x.time, record.data.timezone);
   if (!instant) return { error: "Tanggal atau jam tidak valid untuk zona waktu catatan." };
-  if (x.unit === "serving" && !record.data.reference_serving_g) return invalid;
+  if (x.unit === "serving" ? !record.data.reference_serving_g : !record.data.portion_weight_known) return invalid;
   const grams = servingGrams(x.quantity, x.unit === "serving" ? record.data.reference_serving_g! : 1);
   if (grams < 0.01 || grams > 3000) return { error: "Berat makanan harus antara 0,01 dan 3.000 gram." };
   const { data, error } = await client.from("food_entries")
@@ -272,26 +255,37 @@ export async function removeEntry(_: FormState, form: FormData): Promise<FormSta
   redirect("/nutrisi?tanggal=" + x.date + "&status=dihapus#jurnal");
 }
 
-export async function saveFood(_: FormState, form: FormData): Promise<FormState> {
-  const { client, userId } = await requireProfile();
-  const payload = Object.fromEntries(form);
-  const result = schemas.customFood.safeParse(payload);
-  const day = schemas.date.safeParse(payload.diaryDate);
-  const meal = schemas.entryFields.meal.safeParse(payload.diaryMeal);
-  if (!result.success || !day.success) {
-    return { error: "Periksa angka per 100 g. Total makro maksimal 100 g. Isi nama dan berat porsi bersama, atau kosongkan keduanya." };
+export async function deleteDiarySelection(_: FormState, form: FormData): Promise<FormState> {
+  const { client } = await requireProfile();
+  const date = schemas.date.safeParse(form.get("date"));
+  const raw = form.get("items");
+  if (!date.success || typeof raw !== "string" || raw.length > 20000) return invalid;
+  let decoded: unknown;
+  try {
+    decoded = JSON.parse(raw);
+  } catch {
+    return invalid;
   }
-  const x = result.data;
-  const { error } = await client.from("foods").insert({
-    id: x.id, name: x.name, category: x.category, preparation: x.preparation, serving_label: x.servingLabel || null,
-    serving_g: x.serving, calories: x.calories, protein_g: x.protein, carbs_g: x.carbs, fat_g: x.fat,
-    source: x.source || "Estimasi pribadi",
+  const parsed = schemas.diarySelection.safeParse(decoded);
+  if (!parsed.success) return { error: "Centang 1–150 catatan untuk dihapus." };
+  const { data, error } = await client.rpc("delete_diary_selection", { p_day: date.data, p_items: parsed.data });
+  if (error || data !== parsed.data.length) return { error: "Catatan tidak dihapus. Muat ulang jika ada catatan yang berubah." };
+  refreshDiary();
+  redirect("/nutrisi?tanggal=" + date.data + "&status=hapus-banyak#jurnal");
+}
+
+export async function logPrivateSnack(_: FormState, form: FormData): Promise<FormState> {
+  const { client, profile } = await requireProfile();
+  const parsed = schemas.quickSnack.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { error: "Periksa nama, jumlah, dan rincian gizi per porsi jika diisi." };
+  const x = parsed.data;
+  const instant = entryTime(x.date, x.time, profile.timezone);
+  if (!instant) return { error: "Tanggal atau jam tidak valid untuk zona waktu profil." };
+  const { data, error } = await client.rpc("log_private_snack", {
+    p_id: x.id, p_name: x.name, p_meal: x.meal, p_time: instant, p_weight: x.weight,
+    p_quantity: x.quantity, p_calories: x.calories, p_protein: x.protein, p_carbs: x.carbs, p_fat: x.fat,
   });
-  if (error) {
-    if (error.code !== "23505") return saveError;
-    const { data } = await client.from("foods").select("id").eq("id", x.id).eq("user_id", userId).maybeSingle();
-    if (!data) return saveError;
-  }
-  revalidatePath("/nutrisi");
-  redirect("/nutrisi?tanggal=" + day.data + "&catat=" + x.id + "&status=makanan" + (meal.success ? "&makan=" + meal.data : "") + "#catat");
+  if (error || !data) return saveError;
+  refreshDiary();
+  redirect("/nutrisi?tanggal=" + data + "&status=jajanan#jurnal");
 }

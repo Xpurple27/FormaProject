@@ -3,7 +3,7 @@ import { ArrowUpRight, BookOpen, Dumbbell, Plus, Scale, Utensils } from "lucide-
 import { NutritionSummary } from "@/components/nutrition-summary";
 import { dailyNutrition } from "@/lib/data";
 import { localNow, longDate } from "@/lib/dates";
-import { fmt, groupDiaryEntries, MEALS, sumEntries } from "@/lib/nutrition";
+import { entryAmount, fmt, groupDiaryEntries, MEALS, missingNutrients, recordedCalories, sumEntries } from "@/lib/nutrition";
 import { trainingOverview } from "@/lib/training-data";
 import { nextRoutine, programWeek, trainingWeek } from "@/lib/workout";
 import { requireProfile } from "@/lib/supabase/server";
@@ -29,9 +29,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
     </header>
     {query.awal === "1" && <p role="status" className="notice">Profil dan target awal tersimpan. Mulai dengan mencatat satu makanan yang kamu makan hari ini.</p>}
     <div className="dashboard-main">
-      <NutritionSummary totals={sumEntries(entries)} target={target} label="Kalori hari ini" />
+      <NutritionSummary totals={sumEntries(entries)} target={target} missing={missingNutrients(entries)} label="Kalori hari ini" />
       <div className="grid grid-cols-2 gap-2.5">
-        <Link href="/nutrisi#catat" className="btn btn-primary !px-2.5"><Plus size={19} aria-hidden="true" className="shrink-0" />
+        <Link prefetch={false} href="/nutrisi?tambah=1#catat" className="btn btn-primary !px-2.5"><Plus size={19} aria-hidden="true" className="shrink-0" />
           {query.awal === "1" ? "Catat makanan pertama" : "Catat makanan"}
         </Link>
         <Link href="/nutrisi#jurnal" className="btn btn-secondary !px-2.5"><BookOpen size={18} aria-hidden="true" className="shrink-0" />Buka jurnal</Link>
@@ -62,13 +62,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
       {journal.length > 0 && <ul className="mt-2 divide-y divide-[var(--border)]">
         {journal.slice(-4).reverse().map(items => {
           const entry = items[0];
+          const subtotal = sumEntries(items).calories;
+          const incomplete = missingNutrients(items).includes("calories");
           return <li className="journal-preview-row" key={entry.meal_type + ":" + (entry.meal_batch_id ?? entry.id)}>
             <span className="tile-icon" aria-hidden="true"><Utensils size={15} /></span>
             <div className="min-w-0 flex-1">
               <strong className="break-words">{entry.meal_batch_id ? entry.meal_batch_name ?? "Susunan makanan" : entry.food_name}</strong>
-              <p className="caption muted">{entry.meal_batch_id ? items.length + " komponen" : MEALS[entry.meal_type] + " · " + fmt(entry.quantity_g, 2) + " g"}</p>
+              <p className="caption muted">{entry.meal_batch_id ? items.length + " komponen" : MEALS[entry.meal_type] + " · " + entryAmount(entry)}</p>
             </div>
-            <b className="shrink-0 numeric">{fmt(sumEntries(items).calories)} <span className="muted font-medium">kkal</span></b>
+            <b className="shrink-0 numeric">{recordedCalories(subtotal, incomplete)}</b>
           </li>;
         })}
       </ul>}
