@@ -1,4 +1,4 @@
-const CACHE = "forma-offline-v1";
+const CACHE = "forma-offline-v2";
 const FALLBACK = "/offline.html";
 const destinations = {
   meal: "/nutrisi#catat",

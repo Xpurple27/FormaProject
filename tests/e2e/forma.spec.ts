@@ -474,14 +474,15 @@ test("Android viewport, persistent reminders, permission fallback, notifications
     await page.setViewportSize({ width: 320, height: 720 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const manifest = await (await page.request.get("/manifest.webmanifest")).json();
-    expect(manifest).toEqual(expect.objectContaining({ display: "standalone", scope: "/", start_url: "/beranda" }));
+    expect(manifest).toEqual(expect.objectContaining({ display: "standalone", scope: "/", start_url: "/beranda",
+      theme_color: "#0b0b0d", background_color: "#0b0b0d" }));
     expect(manifest.icons.map((icon: { sizes: string; purpose: string }) => [icon.sizes, icon.purpose]))
       .toEqual([["192x192", "any"], ["512x512", "any"], ["512x512", "maskable"]]);
     await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
     const cdp = await device.newCDPSession(page);
     expect((await cdp.send("Page.getInstallabilityErrors")).installabilityErrors).toEqual([]);
     await cdp.detach();
-    const cached = await page.evaluate(async () => (await (await caches.open("forma-offline-v1")).keys()).map(item => new URL(item.url).pathname));
+    const cached = await page.evaluate(async () => (await (await caches.open("forma-offline-v2")).keys()).map(item => new URL(item.url).pathname));
     expect(cached).toEqual(["/offline.html"]);
     await device.setOffline(true);
     await expect(page.getByText(/Sambungkan kembali sebelum menyimpan/)).toBeVisible();
@@ -489,6 +490,7 @@ test("Android viewport, persistent reminders, permission fallback, notifications
     await expect(page.getByText(/Sedang offline/)).toBeVisible();
     await page.goto("/beranda");
     await expect(page.getByRole("heading", { name: "Koneksi terputus" })).toBeVisible();
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", "#0b0b0d");
     await device.setOffline(false);
     await page.getByRole("button", { name: "Coba lagi" }).click();
     await expect(page.getByRole("heading", { name: "Halo, Pengingat Uji." })).toBeVisible();

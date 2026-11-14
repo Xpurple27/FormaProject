@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "FORMA" },
   icons: { icon: "/forma.png", apple: "/forma.png" },
 };
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#101d2b", viewportFit: "cover" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0b0b0d", viewportFit: "cover" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="id"><body><a className="skip-link" href="#isi">Ke isi halaman</a><PwaRuntime />{children}</body></html>;

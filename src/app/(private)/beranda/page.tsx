@@ -39,14 +39,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
     </div>
     <section aria-label="Latihan dan progres" className="dashboard-side grid grid-cols-2 gap-2.5">
       <Link href={open ? "/latihan#sesi" : "/latihan"} className="card dashboard-tile">
-        <div className="tile-top"><span className="tile-icon tile-icon-blue"><Dumbbell size={18} aria-hidden="true" /></span>
+        <div className="tile-top"><span className="tile-icon"><Dumbbell size={18} aria-hidden="true" /></span>
           <ArrowUpRight size={17} className="muted shrink-0" aria-hidden="true" /></div>
         <h2>Latihan</h2>
         <p>{open ? "Workout " + open.routine + (open.status === "paused" ? " · Dijeda" : " · Aktif")
           : scheduled ? "Jadwal hari ini · Workout " + nextRoutine(history[0]?.routine) : "Program Workout A/B"}</p>
       </Link>
       <Link href="/progres" className="card dashboard-tile">
-        <div className="tile-top"><span className="tile-icon tile-icon-lilac"><Scale size={18} aria-hidden="true" /></span>
+        <div className="tile-top"><span className="tile-icon"><Scale size={18} aria-hidden="true" /></span>
           <ArrowUpRight size={17} className="muted shrink-0" aria-hidden="true" /></div>
         <h2>Progres</h2>
         <p>{measurement.error ? "Pengukuran belum dapat dimuat." : weight == null ? "Catat berat badan" : "Berat terakhir · " + fmt(weight, 2) + " kg"}</p>

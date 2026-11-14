@@ -40,7 +40,7 @@ export function PwaRuntime() {
     };
   }, []);
 
-  return offline ? <div role="status" className="border-b line bg-[#172b3b] px-4 py-2 text-center text-sm">
+  return offline ? <div role="status" className="border-b line bg-[var(--lift)] px-4 py-2 text-center text-sm">
     Koneksi terputus. Sambungkan kembali sebelum menyimpan.
   </div> : null;
 }

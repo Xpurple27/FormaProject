@@ -25,7 +25,7 @@ function NutrientPreview({ nutrients, grams }: { nutrients: Nutrients; grams: nu
 }
 
 export function NutrientTotals({ values }: { values: Nutrients }) {
-  return <div className="grid grid-cols-2 gap-2 rounded-xl bg-[#132332] p-3 text-sm numeric sm:grid-cols-4" aria-live="polite">
+  return <div className="grid grid-cols-2 gap-2 rounded-xl bg-[var(--inset)] p-3 text-sm numeric sm:grid-cols-4" aria-live="polite">
     {([["calories", "Kalori", "kkal"], ["protein_g", "Protein", "g"], ["carbs_g", "Karbohidrat", "g"], ["fat_g", "Lemak", "g"]] as const)
       .map(([key, label, unit]) => <div key={key}><span className="muted caption block">{label}</span>
         <b>{fmt(values[key], 2)} {unit}</b></div>)}

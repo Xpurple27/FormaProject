@@ -41,11 +41,11 @@ erDiagram
 
 | Peran | Nilai |
 | --- | --- |
-| Latar | `#101C29` |
-| Kartu dan permukaan sekunder | `#182938`, `#213647` |
-| Aksen utama | `#8BE2BB` |
-| Teks dan teks sekunder | `#F2F7FA`, `#B1C2CF` |
-| Makro | Protein `#8CCAFF`, karbohidrat `#EFC989`, lemak `#D8B5F3` |
+| Latar | `#0B0B0D` |
+| Kartu dan permukaan sekunder | `#151518`, `#1F1F23` |
+| Aksen utama | `#DFD3EE` |
+| Teks dan teks sekunder | `#F5F3F3`, `#B6B2BB` |
+| Makro | Protein `#C4C0DB`, karbohidrat `#D4C6AD`, lemak `#D2BBC9` |
 | Tipografi | Inter Variable yang dibundel lokal, angka tabular untuk data |
 | Interaksi | Fokus terlihat, input 46 px, tombol utama minimal 44 px, dan navigasi bawah dengan safe-area |
 

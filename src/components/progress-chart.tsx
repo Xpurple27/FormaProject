@@ -18,8 +18,8 @@ export function ProgressChart({ title, unit, color, series }: {
     </div>
     {!last || !first ? <p className="muted">Belum ada pengukuran.</p> : <>
       <svg viewBox="0 0 326 152" role="img" aria-label={"Grafik " + title + " dari " + longDate(first.date) + " hingga " + longDate(last.date)}
-        className="w-full rounded-xl bg-[#142634]">
-        {[18, 76, 134].map(y => <line key={y} x1="18" y1={y} x2="308" y2={y} stroke="#416071" strokeDasharray="3 5" />)}
+        className="w-full rounded-xl bg-[var(--inset)]">
+        {[18, 76, 134].map(y => <line key={y} x1="18" y1={y} x2="308" y2={y} stroke="var(--control-border)" strokeDasharray="3 5" />)}
         {points.length > 1 && <polyline fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
           points={xs.map((x, i) => x + "," + ys[i]).join(" ")} />}
         {points.map((_, i) => <circle key={visible[i].date} cx={xs[i]} cy={ys[i]} r={points.length > 20 ? 2 : 4} fill={color}>

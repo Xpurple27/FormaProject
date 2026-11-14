@@ -80,13 +80,13 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
         currentWeight > profile.initial_weight_kg ? "+" : ""}{fmt(currentWeight - profile.initial_weight_kg, 2)} kg</p>}
       {goalProgress !== null && <div className="grid gap-1">
         <label htmlFor="milestone" className="caption">Jarak menuju target · {fmt(goalProgress, 0)}% tercapai</label>
-        <progress id="milestone" className="meter" style={{ "--fill-color": "var(--mint)" } as React.CSSProperties}
+        <progress id="milestone" className="meter" style={{ "--fill-color": "var(--accent)" } as React.CSSProperties}
           max={100} value={goalProgress} />
       </div>}
     </section>
     <div className="grid gap-3 md:grid-cols-2">
-      <ProgressChart title="Berat badan" unit="kg" color="#8be2bb" series={weights} />
-      <ProgressChart title="Lingkar pinggang" unit="cm" color="#8ccaff" series={waists} />
+      <ProgressChart title="Berat badan" unit="kg" color="var(--accent)" series={weights} />
+      <ProgressChart title="Lingkar pinggang" unit="cm" color="var(--protein)" series={waists} />
     </div>
     <section id="pengukuran" className="card grid gap-3">
       <h2 className="flex items-center gap-2"><Ruler size={20} className="accent" aria-hidden="true" />{existing ? "Ubah pengukuran" : "Catat pengukuran"}</h2>

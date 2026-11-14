@@ -29,12 +29,12 @@ export function ReminderForm({ id, reminder }: { id: string; reminder?: Reminder
           {DAY_NAMES.map((label, index) => <label key={label}
             className="flex min-h-12 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border line text-xs">
             <input type="checkbox" name="weekday" value={index + 1} defaultChecked={reminder?.weekdays.includes(index + 1) ?? true}
-              className="accent-[var(--mint)]" />{label}
+              className="accent-[var(--accent)]" />{label}
           </label>)}
         </div>
       </fieldset>
       <label className="flex min-h-11 items-center gap-2 text-sm">
-        <input type="checkbox" name="enabled" className="accent-[var(--mint)]" defaultChecked={reminder?.enabled ?? true} />Aktif
+        <input type="checkbox" name="enabled" className="accent-[var(--accent)]" defaultChecked={reminder?.enabled ?? true} />Aktif
       </label>
       <Feedback {...save.state} />
       <button className="btn btn-primary justify-self-start" disabled={save.pending || remove.pending}>
@@ -90,7 +90,7 @@ export function ReminderPermission() {
 function DueReminder({ reminder, occurrence }: { reminder: Reminder; occurrence: string }) {
   const { state, pending, form } = useActionForm(handleReminder);
   const item = REMINDER_KINDS[reminder.kind];
-  return <section className="rounded-xl border line bg-[#172b3b] p-3 grid gap-2" aria-label={"Pengingat " + item.label}>
+  return <section className="rounded-xl border line bg-[var(--lift)] p-3 grid gap-2" aria-label={"Pengingat " + item.label}>
     <h2 className="flex items-center gap-2 text-base"><Bell size={18} aria-hidden="true" className="accent" />{item.label}</h2>
     <p className="caption muted">{item.message}</p>
     <form {...form} className="grid gap-2">

@@ -74,7 +74,7 @@ export function Onboarding({ today }: { today: string }) {
             <p className="caption muted sm:col-span-2">Pilih tanggal mulai sesukamu. Jurnal makanan tersedia mulai hari ini.</p>
           </div>
         </details>
-        <div className="rounded-xl bg-[#132332] p-4">
+        <div className="rounded-xl bg-[var(--inset)] p-4">
           <h3>Estimasi energi</h3>
           <p className="mt-2 caption muted" aria-live="polite">{estimate
             ? <>IMT <b className="accent">{fmt(bodyMassIndex(body.weight, body.height))}</b> · BMR <b className="accent">{fmt(estimate.bmr)} kkal</b> · TDEE <b className="accent">{fmt(estimate.tdee)} kkal</b> per hari</>
@@ -103,7 +103,7 @@ export function Onboarding({ today }: { today: string }) {
               ["Protein", fmt(suggested.protein_g) + " g"],
               ["Karbohidrat", fmt(suggested.carbs_g, 2) + " g"],
               ["Lemak", fmt(suggested.fat_g) + " g"],
-            ].map(([label, value]) => <div key={label} className="rounded-xl bg-[#132332] p-3">
+            ].map(([label, value]) => <div key={label} className="rounded-xl bg-[var(--inset)] p-3">
               <dt className="caption muted">{label}</dt><dd className="font-semibold accent">{value}</dd>
             </div>)}
           </dl>

@@ -18,7 +18,7 @@ export function ScheduleForm({ days }: { days: number[] }) {
         {DAY_NAMES.map((day, index) => <label key={day}
           className="flex min-h-12 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border line text-xs">
           <input type="checkbox" name="weekday" value={index + 1} defaultChecked={days.includes(index + 1)}
-            className="accent-[var(--mint)]" />{day}
+            className="accent-[var(--accent)]" />{day}
         </label>)}
       </div>
     </fieldset>
@@ -53,7 +53,7 @@ export function ExerciseGuide({ id, routine, slot }: { id: ExerciseId; routine: 
     <div>
       <Image src={"/exercises/" + exercise.image + ".webp"} width={400} height={196}
         alt={isMain ? "Skema " + exercise.name : "Skema gerakan utama untuk alternatif ini"}
-        className="w-full max-w-sm rounded-xl" />
+        className="exercise-image w-full max-w-sm rounded-xl" />
       {!isMain && <p className="caption muted mt-1">Skema gerakan utama. Ikuti petunjuk varian ini.</p>}
     </div>
     <div className="grid gap-2 text-sm">
@@ -165,7 +165,7 @@ export function ActiveWorkout({ session, records }: { session: WorkoutSession; r
         <div><p className="eyebrow">{paused ? "Sesi dijeda" : "Sesi aktif"}</p><h2 className="mt-1">Workout {session.routine}</h2></div>
         <p className="caption muted numeric">{records.length} dari {progress} set tercatat</p>
       </div>
-      <progress className="meter" style={{ "--fill-color": "var(--mint)" } as React.CSSProperties}
+      <progress className="meter" style={{ "--fill-color": "var(--accent)" } as React.CSSProperties}
         aria-label="Set tercatat" value={records.length} max={progress} />
     </header>
     {paused ? <div className="grid gap-3">
