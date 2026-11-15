@@ -48,12 +48,17 @@ try {
   await check("requested catalog, serving assumptions and archived defaults", async () => {
     const counts = await query("select catalog_group, count(*)::int as count from public.foods group by catalog_group order by catalog_group");
     assert.deepEqual(Object.fromEntries(counts.map(row => [row.catalog_group, row.count])),
-      { archive: 18, drink: 19, ingredient: 5, main: 16, side: 9, snack: 10 });
+      { archive: 18, drink: 20, ingredient: 5, main: 16, side: 9, snack: 10 });
     const [bmw] = await query("select serving_g, serving_label, portion_note, calories * serving_g / 100 as kcal from public.foods where name='BMW Milo' and catalog_group='drink' and user_id is null");
     assert.equal(Number(bmw.serving_g), 200);
     assert.equal(bmw.serving_label, "gelas");
     assert.equal(Number(bmw.kcal), 211.4);
     assert.match(bmw.portion_note, /22 g Milo, 20 g susu kental manis/);
+    const [bmwKopi] = await query("select serving_g, serving_label, portion_note, calories * serving_g / 100 as kcal from public.foods where name='BMW Kopi' and catalog_group='drink' and user_id is null");
+    assert.equal(Number(bmwKopi.serving_g), 200);
+    assert.equal(bmwKopi.serving_label, "gelas");
+    assert.equal(Number(bmwKopi.kcal), 75.88);
+    assert.match(bmwKopi.portion_note, /178 g kopi seduh, dan 5 g gula/);
     const [bakso] = await query("select serving_g, serving_label, portion_note from public.foods where name='Bakso goreng'");
     assert.equal(Number(bakso.serving_g), 60);
     assert.equal(bakso.serving_label, "tusuk");

@@ -129,6 +129,8 @@ Referensi pola antarmuka mobile [Cronometer](https://support.cronometer.com/hc/e
 
 **BMW Milo** ditambahkan ke kategori Minuman. Per gelas acuan 200 g, estimasinya 211,4 kkal, 5,36 g protein, 28,62 g karbohidrat, dan 9,02 g lemak. Porsi model memakai 17 g kuning telur kampung sebagai takaran acuan, 22 g Milo Activ-Go, 20 g susu kental manis, dan 141 g air. Takaran aktual tiap warkop bisa berbeda. [Menu Barona Kupi](https://menukuliner.net/menu/44985/spesial-boh-manok-weng-barona-kupi-lampineung) · [USDA SR28, 01125](https://www.ars.usda.gov/ARSUserFiles/80400525/Data/SR/SR28/reports/sr28fg01.pdf) · [Informasi gizi Milo 22 g](https://nilaigizi.id/product/milo-activ-go-22g) · [Label Frisian Flag](https://www.frisianflag.com/produk/susu-kental-manis/bendera-kental-manis)
 
+**BMW Kopi** tersedia sebagai varian terpisah di Minuman. Satu gelas acuan 200 g memakai 17 g kuning telur kampung, 178 g kopi seduh, dan 5 g gula. Estimasi per gelas ialah 75,88 kkal, 2,9 g protein, 5,6 g karbohidrat, dan 4,54 g lemak. [Menu Barona Kupi](https://menukuliner.net/menu/44985/spesial-boh-manok-weng-barona-kupi-lampineung) · [USDA FoodData Central](https://fdc.nal.usda.gov/)
+
 ## Foto label gizi
 
 - Buka **Camilan → + → Tambah jajanan sendiri → Rincian gizi per porsi → Foto label gizi**. Foto pilihan pengguna diproses oleh Tesseract di browser. Worker dan model bahasa Indonesia diambil dari aplikasi saat pemindaian pertama. Foto tidak diunggah atau disimpan.

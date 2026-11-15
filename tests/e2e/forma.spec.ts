@@ -176,6 +176,13 @@ test("custom food, serving conversion, frequent foods, and isolation of two user
   await expect(page.getByRole("button", { name: /Tahu goreng/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /Nasi putih matang/ })).toHaveCount(0);
   await page.getByLabel("Kategori").selectOption("drink");
+  await page.getByLabel("Cari makanan").fill("bmw");
+  await expect(page.getByRole("button", { name: /^BMW (Kopi|Milo)/ })).toHaveCount(2);
+  await page.getByRole("button", { name: /BMW Kopi/ }).click();
+  const bmwKopi = page.getByRole("form", { name: "Tambah catatan makanan" });
+  await expect(bmwKopi.getByText("75,88 kkal", { exact: true })).toBeVisible();
+  await bmwKopi.getByRole("button", { name: "Ganti makanan" }).click();
+  await page.getByLabel("Kategori").selectOption("drink");
   await page.getByLabel("Cari makanan").fill("bmw milo");
   await page.getByRole("button", { name: /BMW Milo/ }).click();
   const bmw = page.getByRole("form", { name: "Tambah catatan makanan" });
