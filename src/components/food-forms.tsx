@@ -6,6 +6,7 @@ import { addEntry, changeEntry, logPrivateSnack, removeEntry } from "@/lib/actio
 import { CATALOG_GROUPS, fmt, MEALS, missingNutrients, scaleNutrition, servingGrams } from "@/lib/nutrition";
 import type { Entry, Food, Nutrients } from "@/lib/types";
 import { Feedback } from "./feedback";
+import { NutritionLabelFields } from "./nutrition-label-fields";
 import { useActionForm } from "./use-action-form";
 
 export type DateProps = { date: string; time: string; today: string; meal?: Entry["meal_type"] };
@@ -149,6 +150,7 @@ export function FoodForm({ initial, recent, preselected, id, ...dates }: DatePro
 
 export function CustomFoodForm({ id, dates }: { id: string; dates: DateProps }) {
   const { state, pending, form } = useActionForm(logPrivateSnack);
+  const [readingLabel, setReadingLabel] = useState(false);
   return <details className="card !py-2">
     <summary className="font-semibold accent">Tambah jajanan sendiri</summary>
     <form {...form} className="grid gap-3 pb-3" aria-label="Tambah jajanan sendiri">
@@ -159,20 +161,14 @@ export function CustomFoodForm({ id, dates }: { id: string; dates: DateProps }) 
         step=".01" defaultValue="1" inputMode="decimal" required /></label>
       <details className="rounded-xl border line px-3">
         <summary className="font-semibold">Rincian gizi per porsi (opsional)</summary>
-        <p className="caption muted">Salin yang tersedia di label untuk satu porsi. Kolom kosong ditandai belum diketahui.</p>
-        <div className="mt-2 grid grid-cols-2 gap-2 pb-3">
-          {([["weight", "Berat satu porsi (g)", .01], ["calories", "Kalori (kkal)", 0],
-            ["protein", "Protein (g)", 0], ["carbs", "Karbohidrat (g)", 0], ["fat", "Lemak (g)", 0]] as const)
-            .map(([name, label, min]) => <label key={name} className="label">{label}
-              <input className="field" type="number" name={name} min={min} step=".01" inputMode="decimal" /></label>)}
-        </div>
+        <NutritionLabelFields onReading={setReadingLabel} />
       </details>
       <details className="rounded-xl border line px-3">
         <summary className="font-semibold">Waktu dan tanggal</summary>
         <div className="pb-3"><DateFields {...dates} meal={dates.meal ?? "snack"} /></div>
       </details>
       <Feedback {...state} />
-      <button className="btn btn-primary" disabled={pending}>{pending ? "Menyimpan…" : "Catat jajanan"}</button>
+      <button className="btn btn-primary" disabled={pending || readingLabel}>{pending ? "Menyimpan…" : "Catat jajanan"}</button>
     </form>
   </details>;
 }

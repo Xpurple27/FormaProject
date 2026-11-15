@@ -246,6 +246,61 @@ test("custom food, serving conversion, frequent foods, and isolation of two user
   }
 });
 
+test("scan a nutrition label locally, review its values and save a snack", async ({ page, request }) => {
+  const loads: string[] = [];
+  const writes: string[] = [];
+  const host = new URL(test.info().project.use.baseURL!).origin;
+  await page.route("**/*", route => {
+    const url = new URL(route.request().url());
+    return url.origin === host ? route.continue() : route.abort();
+  });
+  page.on("request", request => {
+    const url = new URL(request.url());
+    if (url.pathname.startsWith("/ocr/")) loads.push(url.pathname);
+    if (request.method() === "POST") writes.push(request.url());
+  });
+  await signUp(page, request, "Label Gizi Uji");
+  await page.goto("/nutrisi");
+  await page.getByRole("link", { name: "Catat camilan" }).click();
+  await page.getByText("Tambah jajanan sendiri", { exact: true }).click();
+  const snack = page.getByRole("form", { name: "Tambah jajanan sendiri" });
+  await snack.getByLabel("Nama jajanan").fill("Wafer OCR Uji");
+  await snack.getByText("Rincian gizi per porsi (opsional)").click();
+  expect(loads).toEqual([]);
+  const image = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1000;
+    canvas.height = 660;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "black";
+    ctx.font = "bold 46px sans-serif";
+    for (const [index, line] of ["INFORMASI NILAI GIZI", "Takaran Saji 30 g", "JUMLAH PER SAJIAN",
+      "Energi Total 125 kkal", "Lemak Total 4,5 g", "Protein 2 g", "Karbohidrat Total 19 g"].entries()) {
+      ctx.fillText(line, 45, 80 + index * 83);
+    }
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  await snack.getByLabel("Protein (g)").fill("3");
+  const writesBefore = writes.length;
+  await snack.getByLabel("Pilih foto label gizi").setInputFiles({ name: "label.png", mimeType: "image/png", buffer: Buffer.from(image, "base64") });
+  await expect(snack.getByRole("status")).toHaveText(/Bacaan siap diperiksa/, { timeout: 32000 });
+  expect(loads.join(" ")).toContain("worker.min.js");
+  expect(writes).toHaveLength(writesBefore);
+  await expect(snack.getByLabel("Berat satu porsi (g)")).toHaveValue("30");
+  await expect(snack.getByLabel("Kalori (kkal)")).toHaveValue("125");
+  await expect(snack.getByLabel("Protein (g)")).toHaveValue("3");
+  await expect(snack.getByLabel("Lemak (g)")).toHaveValue("4.5");
+  await expect(snack.getByLabel("Karbohidrat (g)")).toHaveValue("19");
+  await snack.getByLabel("Kalori (kkal)").fill("120");
+  await snack.getByRole("button", { name: "Catat jajanan" }).click();
+  await expect(page.getByText("Jajanan tercatat.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Wafer OCR Uji", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("total-calories")).toHaveText("120");
+});
+
 test("assemble breakfast from five foods, persist quantities and edit a component", async ({ page, request }) => {
   await signUp(page, request, "Sarapan Uji");
   await page.goto("/nutrisi");

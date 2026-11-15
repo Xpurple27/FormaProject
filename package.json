@@ -6,7 +6,9 @@
     "node": ">=22"
   },
   "scripts": {
+    "predev": "node scripts/prepare-ocr.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/prepare-ocr.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -20,12 +22,14 @@
     "@js-temporal/polyfill": "^0.5.1",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
+    "@tesseract.js-data/ind": "1.0.0",
     "lucide-react": "^1.72.0",
     "next": "^16.4.6",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "server-only": "^0.0.1",
     "sharp": "^0.35.5",
+    "tesseract.js": "7.0.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {

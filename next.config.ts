@@ -14,6 +14,9 @@ const config: NextConfig = {
         { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
         { key: "Content-Security-Policy", value: "default-src 'self'; script-src 'self'" },
       ] },
+      { source: "/ocr/v1/:asset", headers: [
+        { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+      ] },
       { source: "/:path(beranda|nutrisi|profil|pengingat|latihan|progres|orientasi|masuk|daftar|auth/confirm|api/ekspor)", headers: [
         { key: "Cache-Control", value: "private, no-store" },
       ] },
