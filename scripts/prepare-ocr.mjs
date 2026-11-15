@@ -11,6 +11,7 @@ await mkdir(destination, { recursive: true });
 
 const files = {
   "worker.min.js": join(engine, "dist", "worker.min.js"),
+  "worker.min.js.LICENSE.txt": join(engine, "dist", "worker.min.js.LICENSE.txt"),
   "ind.traineddata.gz": join(data, "4.0.0_best_int", "ind.traineddata.gz"),
   "LICENSE-tesseract.txt": join(engine, "LICENSE.md"),
   "LICENSE-tesseract-core.txt": join(core, "LICENSE"),
