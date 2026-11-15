@@ -93,7 +93,7 @@ export async function changeWorkout(_: FormState, form: FormData): Promise<FormS
     return unable;
   }
   refreshWorkout();
-  if (x.action === "finish") redirect("/latihan?status=selesai#riwayat");
+  if (x.action === "finish") redirect("/latihan?status=selesai&sesi=" + x.id + "#ringkasan");
   if (x.action === "cancel") redirect("/latihan?status=dibatalkan");
   return { message: x.action === "pause" ? "Sesi dijeda." : x.action === "resume" ? "Sesi dilanjutkan." : "Gerakan diperbarui." };
 }

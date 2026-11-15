@@ -69,6 +69,14 @@ Aplikasi membutuhkan koneksi untuk data akun. Porsi cepat tersedia jika makanan 
 - Set aktual menyimpan repetisi, beban per alat atau durasi tahan. Timer istirahat tersedia selama sesi. Pengguna bisa memilih variasi atau melewati gerakan yang belum memiliki set.
 - Delapan skema asli, petunjuk teknik, kesalahan umum, keamanan, dan alternatif pemula. Source utama `src/lib/workout.ts`, `src/components/workout-controls.tsx`, dan `public/exercises`.
 
+### Sesi terpandu di HP
+
+- **Latihan hari ini** menampilkan pilihan A/B, rotasi berikutnya, dan gerakan di sesi yang dipilih. Saat aktif, fokus berpindah ke set pertama yang belum tercatat. Beban per alat dan repetisi atau durasi bisa diketik atau diubah dengan tombol `−` dan `+`.
+- **Pakai angka terakhir** menyalin catatan untuk gerakan yang sama dari set sebelumnya di sesi ini atau sesi terbaru yang memuat gerakan tersebut. Pengguna tetap mengonfirmasi angka aktual saat menyimpan. Catatan lama diambil dari 30 sesi terakhir.
+- Timer otomatis 60 detik dihitung dari waktu penyimpanan set. Tombol 60 dan 90 detik tersedia untuk memulai timer manual. Membuka ulang sesi menampilkan set yang belum tercatat dan sisa timer otomatis. Jeda mengakhiri timer yang berjalan.
+- **Ringkasan Workout** menampilkan set aktual terhadap rencana, waktu aktif, dan set terbaik per gerakan. Set terbaik dari sesi sebelumnya ditampilkan jika ada catatan dengan gerakan yang sama. Buka kembali ringkasan dari riwayat. Formulir koreksi dirender saat dibuka.
+- Pengujian browser mencakup timer setelah simpan, pemulihan posisi setelah refresh, jeda dan lanjut, koreksi catatan, penggunaan angka sebelumnya, perpindahan gerakan, serta perbandingan dua sesi. Layar 320 px pada sesi aktif lolos pemeriksaan lebar dan aturan axe yang dijalankan.
+
 ## 4 · Progres tubuh
 
 - Berat dan lingkar pinggang bisa disimpan, diedit, dan dihapus per tanggal. Grafik memakai tanggal aktual dan menampilkan hanya pengukuran yang tersedia. Ringkasan mengikuti periode 12 minggu.

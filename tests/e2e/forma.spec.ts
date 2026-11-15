@@ -442,19 +442,28 @@ test("Workout A and B session, measured trends and a private progress photo", as
   await expect(page.getByRole("heading", { name: "Workout A", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "60 dtk" }).click();
   await expect(page.getByRole("timer")).toBeVisible();
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
   const first = page.getByRole("form", { name: "Set 1", exact: true });
   await first.getByLabel("Repetisi", { exact: true }).fill("10");
-  await first.getByLabel("Beban per alat (kg)").fill("4");
-  await first.getByRole("button", { name: "Tandai set selesai" }).click();
-  await expect(first.getByText("Tercatat", { exact: true })).toBeVisible();
+  await first.getByLabel("Beban per alat (kg)", { exact: true }).fill("4");
+  await first.getByRole("button", { name: "Simpan set & mulai istirahat" }).click();
+  await expect(page.getByRole("timer", { name: "Sisa istirahat" })).toBeVisible();
+  await expect(page.getByText(/Set 1 · 4 kg\/alat × 10 rep/)).toBeVisible();
   await expect(page.getByRole("progressbar", { name: "Set tercatat" })).toHaveAttribute("value", "1");
   await page.reload();
-  await expect(first.getByLabel("Repetisi", { exact: true })).toHaveValue("10");
+  const second = page.getByRole("form", { name: "Set 2", exact: true });
+  await expect(second).toBeVisible();
+  await expect(page.getByRole("timer", { name: "Sisa istirahat" })).toBeVisible();
+  await second.getByRole("button", { name: "Pakai angka terakhir" }).click();
+  await expect(second.getByLabel("Repetisi", { exact: true })).toHaveValue("10");
+  await second.getByRole("button", { name: "Tambah repetisi", exact: true }).click();
+  await expect(second.getByLabel("Repetisi", { exact: true })).toHaveValue("11");
   await page.getByRole("button", { name: "Jeda sesi", exact: true }).click();
   await expect(page.getByRole("button", { name: "Lanjutkan sesi" })).toBeVisible();
   await page.reload();
   await page.getByRole("button", { name: "Lanjutkan sesi" }).click();
-  await expect(first.getByText("Tercatat", { exact: true })).toBeVisible();
+  await expect(second).toBeVisible();
+  await expect(page.getByRole("timer")).toHaveCount(0);
   await page.getByRole("button", { name: "Gerakan berikutnya" }).click();
   await page.getByText("Teknik dan pilihan gerakan", { exact: true }).click();
   await page.getByRole("button", { name: "Ganti ke Push-up dinding" }).click();
@@ -462,6 +471,9 @@ test("Workout A and B session, measured trends and a private progress photo", as
   await page.getByRole("button", { name: "Selesaikan sesi" }).click();
   await page.getByRole("button", { name: "Simpan sesi sebagian" }).click();
   await expect(page.getByText("Sesi selesai dan tercatat di riwayat.")).toBeVisible();
+  const recap = page.getByRole("region", { name: "Ringkasan Workout A" });
+  await expect(recap.getByText("1 dari 8", { exact: true })).toBeVisible();
+  await expect(recap.getByText("Sesi ini · 4 kg/alat × 10 rep")).toBeVisible();
   await expect(page.getByLabel("Pilih workout")).toHaveValue("B");
   await page.getByText(/Selesai sebagian · 1 dari 8 set/).click();
   await page.getByText("Koreksi set", { exact: true }).click();
@@ -475,8 +487,8 @@ test("Workout A and B session, measured trends and a private progress photo", as
   await expect(page.getByRole("heading", { name: "Workout B", exact: true })).toBeVisible();
   const bSet = page.locator("#sesi").getByRole("form", { name: "Set 1", exact: true });
   await bSet.getByLabel("Repetisi", { exact: true }).fill("8");
-  await bSet.getByRole("button", { name: "Tandai set selesai" }).click();
-  await expect(bSet.getByText("Tercatat", { exact: true })).toBeVisible();
+  await bSet.getByRole("button", { name: "Simpan set & mulai istirahat" }).click();
+  await expect(page.getByRole("progressbar", { name: "Set tercatat" })).toHaveAttribute("value", "1");
   await page.getByRole("button", { name: "Selesaikan sesi" }).click();
   await page.getByRole("button", { name: "Simpan sesi sebagian" }).click();
   await expect(page.getByText("Sesi selesai dan tercatat di riwayat.")).toBeVisible();
@@ -523,6 +535,48 @@ test("Workout A and B session, measured trends and a private progress photo", as
   await page.getByRole("button", { name: "Ya, hapus foto" }).click();
   await expect(page.getByText("Foto dihapus.", { exact: true })).toBeVisible();
   expect((await page.request.get(src)).status()).toBe(404);
+});
+
+test("guided workout reuses an earlier exercise, moves on and compares completed sessions", async ({ page, request }) => {
+  await signUp(page, request, "Latihan Terpandu", dayOffset(localNow("Asia/Jakarta").date, -1));
+  await page.goto("/latihan");
+  await expect(page.getByRole("heading", { name: "Latihan hari ini" })).toBeVisible();
+  await page.getByRole("button", { name: "Mulai latihan" }).click();
+  const first = page.getByRole("form", { name: "Set 1", exact: true });
+  const second = page.getByRole("form", { name: "Set 2", exact: true });
+  await first.getByLabel("Repetisi", { exact: true }).fill("8");
+  await first.getByLabel("Beban per alat (kg)", { exact: true }).fill("6");
+  await first.getByRole("button", { name: "Simpan set & mulai istirahat" }).click();
+  await expect(second).toBeVisible();
+  await page.getByRole("button", { name: "Selesaikan sesi" }).click();
+  await page.getByRole("button", { name: "Simpan sesi sebagian" }).click();
+  await expect(page.getByRole("region", { name: "Ringkasan Workout A" })).toBeVisible();
+
+  await page.getByLabel("Pilih workout").selectOption("A");
+  await page.getByRole("button", { name: "Mulai latihan" }).click();
+  await expect(page.getByText("Terakhir · 6 kg/alat × 8 rep")).toBeVisible();
+  await first.getByRole("button", { name: "Pakai angka terakhir" }).click();
+  await expect(first.getByLabel("Beban per alat (kg)", { exact: true })).toHaveValue("6");
+  await first.getByRole("button", { name: "Tambah repetisi", exact: true }).click();
+  await first.getByRole("button", { name: "Tambah repetisi", exact: true }).click();
+  await first.getByRole("button", { name: "Simpan set & mulai istirahat" }).click();
+  await second.getByRole("button", { name: "Pakai angka terakhir" }).click();
+  await expect(second.getByLabel("Repetisi", { exact: true })).toHaveValue("10");
+  await second.getByRole("button", { name: "Simpan set & mulai istirahat" }).click();
+  await expect(page.getByRole("heading", { name: "Dumbbell floor press", exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 720 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const audit = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+  expect(audit.violations.map(item => item.id)).toEqual([]);
+
+  await page.getByRole("button", { name: "Selesaikan sesi" }).click();
+  await page.getByRole("button", { name: "Simpan sesi sebagian" }).click();
+  const recap = page.getByRole("region", { name: "Ringkasan Workout A" });
+  await expect(recap.getByText("2 dari 8", { exact: true })).toBeVisible();
+  await expect(recap.getByText("Sesi ini · 6 kg/alat × 10 rep")).toBeVisible();
+  await expect(recap.getByText("Sesi sebelumnya · 6 kg/alat × 8 rep")).toBeVisible();
+  await page.reload();
+  await expect(recap.getByText("2 dari 8", { exact: true })).toBeVisible();
 });
 
 
