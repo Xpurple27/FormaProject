@@ -175,6 +175,14 @@ test("custom food, serving conversion, frequent foods, and isolation of two user
   await page.getByLabel("Kategori").selectOption("side");
   await expect(page.getByRole("button", { name: /Tahu goreng/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /Nasi putih matang/ })).toHaveCount(0);
+  await page.getByLabel("Kategori").selectOption("drink");
+  await page.getByLabel("Cari makanan").fill("bmw milo");
+  await page.getByRole("button", { name: /BMW Milo/ }).click();
+  const bmw = page.getByRole("form", { name: "Tambah catatan makanan" });
+  await expect(bmw.getByText("211,4 kkal", { exact: true })).toBeVisible();
+  await bmw.getByRole("button", { name: "½ porsi", exact: true }).click();
+  await expect(bmw.getByText("105,7 kkal", { exact: true })).toBeVisible();
+  await bmw.getByRole("button", { name: "Ganti makanan" }).click();
   await page.getByRole("combobox", { name: "Kategori", exact: true }).selectOption("");
   await page.getByLabel("Cari makanan").fill("nasi goreng telur");
   await page.getByRole("button", { name: /Nasi goreng \+ telur dadar/ }).click();

@@ -127,6 +127,8 @@ Referensi pola antarmuka mobile [Cronometer](https://support.cronometer.com/hc/e
 - Acuan siomay kecil ialah empat butir @ 20 g, dengan tambahan 25 g saus kacang dan/atau 80 g kuah sesuai pilihan. Acuan bakso goreng ialah satu tusuk isi empat butir (56 g bakso + 4 g minyak terserap). Porsi dapat diedit. Rincian nilai per porsi dan sumber pembanding tersedia di layar pencatatan.
 - Verifikasi lokal lulus untuk lint, TypeScript, build produksi, 19 unit test, 13 skenario basis data, dan 5 skenario Playwright. Uji browser mencakup katalog tertutup pada awalnya, pencarian lokal, transaksi hapus banyak, penyimpanan jajanan dengan gizi yang belum diketahui, serta tampilan dan pemasangan PWA dalam simulasi Android.
 
+**BMW Milo** ditambahkan ke kategori Minuman. Per gelas acuan 200 g, estimasinya 211,4 kkal, 5,36 g protein, 28,62 g karbohidrat, dan 9,02 g lemak. Porsi model memakai 17 g kuning telur kampung sebagai takaran acuan, 22 g Milo Activ-Go, 20 g susu kental manis, dan 141 g air. Takaran aktual tiap warkop bisa berbeda. [Menu Barona Kupi](https://menukuliner.net/menu/44985/spesial-boh-manok-weng-barona-kupi-lampineung) · [USDA SR28, 01125](https://www.ars.usda.gov/ARSUserFiles/80400525/Data/SR/SR28/reports/sr28fg01.pdf) · [Informasi gizi Milo 22 g](https://nilaigizi.id/product/milo-activ-go-22g) · [Label Frisian Flag](https://www.frisianflag.com/produk/susu-kental-manis/bendera-kental-manis)
+
 ## Foto label gizi
 
 - Buka **Camilan → + → Tambah jajanan sendiri → Rincian gizi per porsi → Foto label gizi**. Foto pilihan pengguna diproses oleh Tesseract di browser. Worker dan model bahasa Indonesia diambil dari aplikasi saat pemindaian pertama. Foto tidak diunggah atau disimpan.
