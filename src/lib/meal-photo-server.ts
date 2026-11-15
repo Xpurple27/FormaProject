@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Food } from "./types";
 import type { MealPhotoResult } from "./meal-photo";
 
-const MODEL = "google/gemma-4-31b-it:free";
+const MODEL = "inclusionai/ling-3.2-flash:free";
 const MAX_SUGGESTIONS = 12;
 
 export function mealPhotoKey(email?: string) {
@@ -15,6 +15,8 @@ const reply = z.object({
   matches: z.array(z.number().int().positive()).max(MAX_SUGGESTIONS),
   unmatched: z.array(z.string().trim().min(1).max(70)).max(MAX_SUGGESTIONS),
 });
+const replySchema = z.toJSONSchema(reply, { target: "draft-7" });
+delete replySchema.$schema;
 const completion = z.object({
   choices: z.array(z.object({ message: z.object({ content: z.string().max(4000) }) })).min(1),
 });
@@ -38,7 +40,7 @@ export async function recognizeMeal(image: Buffer, catalog: Food[], key: string,
     body: JSON.stringify({
       model: MODEL,
       provider: { require_parameters: true, max_price: { prompt: 0, completion: 0, image: 0, request: 0 } },
-      response_format: { type: "json_object" },
+      response_format: { type: "json_schema", json_schema: { name: "forma_meal_photo", strict: true, schema: replySchema } },
       temperature: 0,
       max_tokens: 512,
       reasoning: { effort: "none", exclude: true },

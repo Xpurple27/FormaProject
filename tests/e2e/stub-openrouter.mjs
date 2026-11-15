@@ -9,9 +9,12 @@ globalThis.fetch = async (input, init) => {
   const request = new Request(input, init);
   const body = await request.json();
   assert.equal(request.headers.get("authorization"), "Bearer forma-offline-test");
-  assert.equal(body.model, "google/gemma-4-31b-it:free");
+  assert.equal(body.model, "inclusionai/ling-3.2-flash:free");
   assert.deepEqual(body.provider.max_price, { prompt: 0, completion: 0, image: 0, request: 0 });
-  assert.equal(body.response_format.type, "json_object");
+  assert.equal(body.response_format.type, "json_schema");
+  assert.equal(body.response_format.json_schema.strict, true);
+  assert.deepEqual(body.response_format.json_schema.schema.required, ["matches", "unmatched"]);
+  assert.equal(body.response_format.json_schema.schema.additionalProperties, false);
   assert.equal(body.reasoning.effort, "none");
 
   const [prompt, image] = body.messages[0].content;
