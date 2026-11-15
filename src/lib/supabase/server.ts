@@ -31,7 +31,7 @@ export const getSession = cache(async () => {
   if (!supabaseConfig()) return null;
   const client = await createClient();
   const { data } = await client.auth.getClaims();
-  return data?.claims.sub ? { client, userId: data.claims.sub } : null;
+  return data?.claims.sub ? { client, userId: data.claims.sub, email: data.claims.email } : null;
 });
 
 export const requireSession = cache(async () => {

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
-import { Coffee, Cookie, Layers2, ListChecks, Moon, Plus, Sun } from "lucide-react";
+import { Camera, Coffee, Cookie, Layers2, ListChecks, Moon, Plus, Sun } from "lucide-react";
 import { z } from "zod";
 import { DiarySelection } from "@/components/diary-selection";
 import { DiaryDate } from "@/components/diary-date";
@@ -10,6 +10,7 @@ import { MealBuilder } from "@/components/meal-builder";
 import { NutritionSummary } from "@/components/nutrition-summary";
 import { dailyNutrition, getCatalog, recentFoods } from "@/lib/data";
 import { dayOffset, localNow, longDate, validDate } from "@/lib/dates";
+import { mealPhotoKey } from "@/lib/meal-photo-server";
 import { entryAmount, fmt, groupDiaryEntries, MEALS, missingNutrients, recordedCalories, sumEntries } from "@/lib/nutrition";
 import type { Entry, Nutrients } from "@/lib/types";
 import { requireProfile } from "@/lib/supabase/server";
@@ -29,7 +30,7 @@ const messages = {
 export default async function NutritionPage({ searchParams }: {
   searchParams: Promise<{ tanggal?: string; status?: string; catat?: string; makan?: string; mode?: string; tambah?: string; pilih?: string }>;
 }) {
-  const [{ client, userId, profile }, query] = await Promise.all([requireProfile(), searchParams]);
+  const [{ client, userId, profile, email }, query] = await Promise.all([requireProfile(), searchParams]);
   const { date: today, time } = localNow(profile.timezone);
   const requested = query.tanggal;
   const date = typeof requested === "string" && validDate(requested) && requested <= today ? requested : today;
@@ -49,6 +50,7 @@ export default async function NutritionPage({ searchParams }: {
     ? messages[query.status as keyof typeof messages] : undefined;
 
   const composing = query.mode === "susun";
+  const photoEnabled = Boolean(mealPhotoKey(email));
   const dates = { date, today, time, meal };
   const foodFormId = randomUUID();
   const diary = "/nutrisi?tanggal=" + date;
@@ -114,11 +116,14 @@ export default async function NutritionPage({ searchParams }: {
             <Layers2 size={17} aria-hidden="true" className="shrink-0" />Susun sekali makan
           </Link>
         </div>
+        {photoEnabled && !composing && <Link prefetch={false} href={base + "&mode=susun#foto-makanan"} className="btn btn-secondary">
+          <Camera size={17} aria-hidden="true" />Foto makanan
+        </Link>}
         {composing ? <section className="card grid gap-4">
           <div><h2>Susun sekali makan</h2>
             <p className="caption muted mt-1">Pilih bahan, lauk, dan minuman. FORMA menghitung total dari takaran yang kamu masukkan.</p>
           </div>
-          <MealBuilder key={base} id={randomUUID()} initial={catalog} recent={recent} dates={dates} />
+          <MealBuilder key={base} id={randomUUID()} initial={catalog} recent={recent} dates={dates} photoEnabled={photoEnabled} />
         </section> : <>
           {query.status === "makanan" && selection && <Feedback message={message} />}
           <FoodForm key={foodFormId} id={foodFormId} initial={catalog} recent={recent} preselected={selection ?? null} {...dates} />

@@ -3,11 +3,13 @@
 import { useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { addMeal } from "@/lib/actions";
+import type { MealPhotoResult } from "@/lib/meal-photo";
 import { fmt, missingNutrients, scaleNutrition, servingGrams } from "@/lib/nutrition";
 import type { Food, Nutrients } from "@/lib/types";
 import { MAX_MEAL_ITEMS } from "@/lib/validation";
 import { Feedback } from "./feedback";
 import { DateFields, FoodPicker, NutrientTotals, PortionChoices, type DateProps } from "./food-forms";
+import { MealPhotoPicker } from "./meal-photo-picker";
 import { useActionForm } from "./use-action-form";
 
 type Item = { id: string; food: Food; quantity: string; unit: "gram" | "serving" };
@@ -16,9 +18,17 @@ function gramsFor(item: Item) {
   return servingGrams(Number(item.quantity), item.unit === "serving" ? item.food.serving_g ?? 0 : 1);
 }
 
-export function MealBuilder({ id, initial, recent, dates }: { id: string; initial: Food[]; recent: Food[]; dates: DateProps }) {
+function portionItem(food: Food): Item {
+  const serving = Boolean(food.serving_g);
+  return { id: crypto.randomUUID(), food, unit: serving ? "serving" : "gram", quantity: serving ? "1" : "100" };
+}
+
+export function MealBuilder({ id, initial, recent, dates, photoEnabled }: {
+  id: string; initial: Food[]; recent: Food[]; dates: DateProps; photoEnabled: boolean;
+}) {
   const [items, setItems] = useState<Item[]>([]);
   const [showPicker, setShowPicker] = useState(true);
+  const [photoResult, setPhotoResult] = useState<MealPhotoResult | null>(null);
   const newItem = useRef<string | null>(null);
   const { state, pending, form } = useActionForm(addMeal);
   const canSave = items.length > 0 && items.every(item => {
@@ -36,11 +46,21 @@ export function MealBuilder({ id, initial, recent, dates }: { id: string; initia
 
   function choose(food: Food) {
     if (items.length >= MAX_MEAL_ITEMS || pending) return;
-    const serving = Boolean(food.serving_g);
-    const itemId = crypto.randomUUID();
-    newItem.current = itemId;
-    setItems([...items, { id: itemId, food, unit: serving ? "serving" : "gram", quantity: serving ? "1" : "100" }]);
+    const item = portionItem(food);
+    newItem.current = item.id;
+    setItems([...items, item]);
     setShowPicker(false);
+  }
+
+  function applyPhoto(result: MealPhotoResult) {
+    const foods = new Map(initial.map(food => [food.id, food]));
+    const suggestions = result.foodIds.flatMap(id => {
+      const food = foods.get(id);
+      return food ? [portionItem(food)] : [];
+    });
+    setPhotoResult({ ...result, foodIds: suggestions.map(item => item.food.id) });
+    setItems(suggestions);
+    setShowPicker(!suggestions.length);
   }
 
   function updateItem(id: string, change: Partial<Pick<Item, "unit" | "quantity">>) {
@@ -50,6 +70,13 @@ export function MealBuilder({ id, initial, recent, dates }: { id: string; initia
   return <form {...form} className="grid gap-4" aria-label="Susun sekali makan">
     <input type="hidden" name="id" value={id} />
     <input type="hidden" name="items" value={JSON.stringify(items.map(item => ({ ...item, food: item.food.id })))} />
+    {photoEnabled && !items.length && <MealPhotoPicker ready={applyPhoto} />}
+    {photoResult && <div role="status" className="grid gap-1 rounded-xl border line p-3">
+      <p className="caption">{photoResult.foodIds.length
+        ? "Cocokkan saran dengan foto dan sesuaikan takaran sebelum menyimpan."
+        : "Belum ada menu yang cocok dari foto. Kamu bisa mencari bahan secara manual."}</p>
+      {!!photoResult.unmatched.length && <p className="caption muted">Perlu dicek atau ditambahkan manual: {photoResult.unmatched.join(", ")}.</p>}
+    </div>}
     <fieldset disabled={pending} className="grid min-w-0 gap-4">
       {items.length > 0 && <ol className="grid gap-2">
         {items.map(item => <li key={item.id} className="diary-meal p-3 grid gap-2">
@@ -61,7 +88,10 @@ export function MealBuilder({ id, initial, recent, dates }: { id: string; initia
             <button type="button" className="topbar-action" aria-label={"Keluarkan " + item.food.name}
               onClick={() => {
                 setItems(items.filter(row => row.id !== item.id));
-                if (items.length === 1) setShowPicker(true);
+                if (items.length === 1) {
+                  setShowPicker(true);
+                  setPhotoResult(null);
+                }
               }}><X size={18} aria-hidden="true" /></button>
           </div>
           <div className="grid grid-cols-2 gap-2">

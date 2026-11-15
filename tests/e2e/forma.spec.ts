@@ -3,14 +3,13 @@ import { devices, expect, test, type APIRequestContext, type Page } from "@playw
 import AxeBuilder from "@axe-core/playwright";
 import { createClient } from "@supabase/supabase-js";
 
-import { dayOffset, localNow } from "../../src/lib/dates";
+import { dayOffset, localNow, toInstant } from "../../src/lib/dates";
 
 const password = "Forma-test-only-42!";
 const riceId = "c160fc45-670c-46bd-a521-6dd2d054ec09";
 const mailUrl = process.env.FORMA_TEST_MAIL_URL ?? "http://127.0.0.1:54324";
 
-async function signUp(page: Page, request: APIRequestContext, name: string, start = "2099-02-01") {
-  const email = "forma-" + randomUUID() + "@example.com";
+async function signUp(page: Page, request: APIRequestContext, name: string, start = "2099-02-01", email = `forma-${randomUUID()}@example.com`) {
   await page.goto("/daftar");
   await page.getByLabel("Email", { exact: true }).fill(email);
   await page.getByLabel("Kata sandi").fill(password);
@@ -301,6 +300,69 @@ test("scan a nutrition label locally, review its values and save a snack", async
   await expect(page.getByTestId("total-calories")).toHaveText("120");
 });
 
+test("food photo matches catalog, keeps uncertain items out and saves reviewed portions", async ({ page, request, browser }) => {
+  const email = process.env.FORMA_TEST_PHOTO_EMAIL;
+  test.skip(!email, "Configure the photo test account and OpenRouter test transport");
+  const origin = new URL(test.info().project.use.baseURL!).origin;
+  const headers = { Origin: origin, "Content-Type": "image/jpeg" };
+  const anonymous = await page.request.post("/api/nutrisi/foto", { headers, data: Buffer.from("photo") });
+  expect(anonymous.status(), await anonymous.text()).toBe(401);
+  await signUp(page, request, "Foto Makanan Uji", undefined, email);
+  expect((await page.request.post("/api/nutrisi/foto", { headers: { ...headers, Origin: "https://example.com" }, data: "photo" })).status()).toBe(403);
+  expect((await page.request.post("/api/nutrisi/foto", { headers, data: Buffer.from("incorrect image") })).status()).toBe(422);
+
+  const other = await browser.newContext({ baseURL: origin });
+  try {
+    const guest = await other.newPage();
+    await signUp(guest, request, "Foto Tamu Uji");
+    await guest.goto("/nutrisi?tambah=1&mode=susun");
+    await expect(guest.getByRole("region", { name: "Foto makanan" })).toHaveCount(0);
+    expect((await guest.request.post("/api/nutrisi/foto", { headers, data: Buffer.from("photo") })).status()).toBe(403);
+  } finally {
+    await other.close();
+  }
+
+  await page.goto("/nutrisi");
+  await page.getByRole("link", { name: "Catat makan siang" }).click();
+  await page.getByRole("link", { name: "Foto makanan" }).click();
+  const meal = page.getByRole("form", { name: "Susun sekali makan" });
+  const preparedImage = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1200;
+    canvas.height = 900;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "darkorange";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  const analyses: string[] = [];
+  page.on("request", req => {
+    if (req.method() === "POST" && new URL(req.url()).pathname === "/api/nutrisi/foto") analyses.push(req.url());
+  });
+  await meal.getByLabel("Pilih file foto makanan").setInputFiles({ name: "makan.png", mimeType: "image/png", buffer: Buffer.from(preparedImage, "base64") });
+  await expect(meal.getByRole("img", { name: "Foto makanan yang akan dianalisis" })).toBeVisible();
+  expect(analyses).toHaveLength(0);
+  await meal.getByRole("button", { name: "Analisis foto", exact: true }).click();
+  await expect(meal.getByRole("heading", { name: "Nasi putih + ayam goreng", exact: true })).toBeVisible();
+  await expect(meal.getByRole("heading", { name: "Tempe goreng", exact: true })).toBeVisible();
+  await expect(meal.getByRole("heading", { name: "Nasi putih matang", exact: true })).toHaveCount(0);
+  await expect(meal.getByText(/Perlu dicek.*Sambal kacang/)).toBeVisible();
+  await expect(meal.getByLabel("Waktu makan")).toHaveValue("lunch");
+  const combo = meal.getByRole("listitem").filter({ has: page.getByRole("heading", { name: "Nasi putih + ayam goreng", exact: true }) });
+  await combo.getByRole("button", { name: "½ porsi", exact: true }).click();
+  await meal.getByLabel("Nama menu (opsional)").fill("Makan siang dari foto");
+  expect(analyses).toHaveLength(1);
+  await expect(meal.getByText("352 kkal", { exact: true })).toBeVisible();
+  await meal.getByRole("button", { name: "Catat semua ke jurnal" }).click();
+  await expect(page.getByText("Semua bahan dan minuman tercatat.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId("total-calories")).toHaveText("352");
+  const report = await (await page.request.get("/api/ekspor")).json();
+  expect(report.entries.map((row: { food_name: string; quantity_g: number }) => [row.food_name, row.quantity_g]))
+    .toEqual(expect.arrayContaining([["Nasi putih + ayam goreng", 140], ["Tempe goreng", 30]]));
+  expect(report.entries).toHaveLength(2);
+});
+
 test("assemble breakfast from five foods, persist quantities and edit a component", async ({ page, request }) => {
   await signUp(page, request, "Sarapan Uji");
   await page.goto("/nutrisi");
@@ -477,9 +539,9 @@ test("Android viewport, persistent reminders, permission fallback, notifications
     await expect(page.getByText(/Izin diblokir/)).toBeVisible();
     await expect(page.getByRole("button", { name: "Izinkan notifikasi" })).toHaveCount(0);
     const setup = page.getByRole("form", { name: "Buat pengingat" });
-    const current = localNow("Asia/Jakarta").time;
+    const reminderTime = localNow("Asia/Jakarta");
     await setup.getByLabel("Jenis").selectOption("weight");
-    await setup.getByLabel("Jam").fill(current);
+    await setup.getByLabel("Jam").fill(reminderTime.time);
     await setup.getByRole("button", { name: "Simpan pengingat" }).click();
     await expect(page.getByText("Pengingat tersimpan.")).toBeVisible();
     const notice = page.getByRole("region", { name: "Pengingat Timbang berat" });
@@ -528,7 +590,8 @@ test("Android viewport, persistent reminders, permission fallback, notifications
       const captured = (tab: Page) => tab.evaluate(() => (window as Window & { testNotifications?: string[] }).testNotifications?.length ?? 0);
       await expect.poll(async () => (await captured(tabA)) + (await captured(tabB)), { timeout: 22000 }).toBe(1);
       const { data } = await api.from("reminders").select("last_notified_at").eq("id", records[0].id).single();
-      expect(Date.parse(data?.last_notified_at ?? "")).toBe(now - 2000);
+      const scheduled = Date.parse(toInstant(reminderTime.date, reminderTime.time, "Asia/Jakarta"));
+      expect(Date.parse(data?.last_notified_at ?? "")).toBe(Math.max(now - 2000, scheduled));
       await tabA.reload();
       await expect(tabA.getByRole("region", { name: "Pengingat Timbang berat" })).toBeVisible();
       expect(await captured(tabA)).toBe(0);
