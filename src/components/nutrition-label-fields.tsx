@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, LoaderCircle } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import { LABEL_FIELDS, type LabelValues } from "@/lib/nutrition-label";
+import { PhotoSourceButtons } from "./photo-source-buttons";
 
 const MAX_PHOTO_BYTES = 20 * 1024 * 1024;
 
@@ -12,7 +13,6 @@ export function NutritionLabelFields({ onReading }: { onReading: (reading: boole
   const [message, setMessage] = useState("");
   const active = useRef<AbortController | null>(null);
   const manual = useRef<LabelValues>({});
-  const picker = useRef<HTMLInputElement>(null);
   useEffect(() => () => {
     active.current?.abort();
     active.current = null;
@@ -56,17 +56,10 @@ export function NutritionLabelFields({ onReading }: { onReading: (reading: boole
   return <>
     <p className="caption muted">Gunakan angka untuk satu sajian. Kolom kosong ditandai belum diketahui.</p>
     <div className="mt-2 grid gap-2">
-      <input ref={picker} type="file" accept="image/*" aria-label="Pilih foto label gizi" className="sr-only" tabIndex={-1}
-        onChange={event => {
-          const photo = event.currentTarget.files?.[0];
-          event.currentTarget.value = "";
-          if (photo) void scan(photo);
-        }} />
-      <button type="button" className="btn btn-secondary justify-self-start" disabled={reading} onClick={() => picker.current?.click()}>
-        {reading ? <LoaderCircle size={17} className="motion-safe:animate-spin" aria-hidden="true" /> : <Camera size={17} aria-hidden="true" />}
-        Foto label gizi
-      </button>
-      {message && <p className="caption muted" role="status">{message}</p>}
+      <PhotoSourceButtons disabled={reading} onPhoto={photo => void scan(photo)} />
+      {message && <p className="caption muted flex items-start gap-2" role="status">
+        {reading && <LoaderCircle size={17} className="shrink-0 motion-safe:animate-spin" aria-hidden="true" />}{message}
+      </p>}
     </div>
     <div className="mt-2 grid grid-cols-2 gap-2 pb-3">
       {LABEL_FIELDS.map(([name, label, min, max]) => <label key={name} className="label">{label}

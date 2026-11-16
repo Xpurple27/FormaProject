@@ -298,7 +298,12 @@ test("scan a nutrition label locally, review its values and save a snack", async
   });
   await snack.getByLabel("Protein (g)").fill("3");
   const writesBefore = writes.length;
-  await snack.getByLabel("Pilih foto label gizi").setInputFiles({ name: "label.png", mimeType: "image/png", buffer: Buffer.from(image, "base64") });
+  const [labelGallery] = await Promise.all([
+    page.waitForEvent("filechooser"),
+    snack.getByRole("button", { name: "Pilih dari galeri", exact: true }).click(),
+  ]);
+  expect(await labelGallery.element().getAttribute("capture")).toBeNull();
+  await labelGallery.setFiles({ name: "label.png", mimeType: "image/png", buffer: Buffer.from(image, "base64") });
   await expect(snack.getByRole("status")).toHaveText(/Bacaan siap diperiksa/, { timeout: 32000 });
   expect(loads.join(" ")).toContain("worker.min.js");
   expect(writes).toHaveLength(writesBefore);
@@ -354,7 +359,12 @@ test("food photo matches catalog, keeps uncertain items out and saves reviewed p
   page.on("request", req => {
     if (req.method() === "POST" && new URL(req.url()).pathname === "/api/nutrisi/foto") analyses.push(req.url());
   });
-  await meal.getByLabel("Pilih file foto makanan").setInputFiles({ name: "makan.png", mimeType: "image/png", buffer: Buffer.from(preparedImage, "base64") });
+  const [mealCamera] = await Promise.all([
+    page.waitForEvent("filechooser"),
+    meal.getByRole("button", { name: "Ambil foto", exact: true }).click(),
+  ]);
+  expect(await mealCamera.element().getAttribute("capture")).toBe("environment");
+  await mealCamera.setFiles({ name: "makan.png", mimeType: "image/png", buffer: Buffer.from(preparedImage, "base64") });
   await expect(meal.getByRole("img", { name: "Foto makanan yang akan dianalisis" })).toBeVisible();
   expect(analyses).toHaveLength(0);
   await meal.getByRole("button", { name: "Analisis foto", exact: true }).click();

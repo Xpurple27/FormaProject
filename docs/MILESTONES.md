@@ -133,14 +133,14 @@ Referensi pola antarmuka mobile [Cronometer](https://support.cronometer.com/hc/e
 
 ## Foto label gizi
 
-- Buka **Camilan → + → Tambah jajanan sendiri → Rincian gizi per porsi → Foto label gizi**. Foto pilihan pengguna diproses oleh Tesseract di browser. Worker dan model bahasa Indonesia diambil dari aplikasi saat pemindaian pertama. Foto tidak diunggah atau disimpan.
+- Buka **Camilan → + → Tambah jajanan sendiri → Rincian gizi per porsi**, lalu tekan **Ambil foto** atau **Pilih dari galeri**. Foto pilihan pengguna diproses oleh Tesseract di browser. Worker dan model bahasa Indonesia diambil dari aplikasi saat pemindaian pertama. Foto tidak diunggah atau disimpan.
 - OCR menawarkan berat dalam gram, energi dalam kkal, protein, karbohidrat, dan lemak dari baris label yang bisa dibaca. Pengguna dapat memperbaiki angka sebelum menekan **Catat jajanan**. Nilai dari pengisian manual dipertahankan ketika mengambil foto baru. Jika label memuat angka per 100 g atau 100 ml, masukkan nilai per sajian secara manual.
 - OCR memakai penyimpanan jajanan yang tersedia. Tidak ada perpindahan data atau kunci API tambahan. Skrip `scripts/prepare-ocr.mjs` menyiapkan aset worker yang dipakai oleh `npm run dev` dan `npm run build`.
 - Build produksi, lint, TypeScript, 22 unit test, 13 skenario basis data, dan 6 skenario browser lulus. Skenario OCR menjalankan worker asli dengan gambar label uji, memperbaiki satu angka, menyimpan catatan, dan memuat ulang jurnal. Kamera HP fisik belum diuji.
 
 ## Foto makanan dari kamera atau galeri
 
-- Dari **Nutrisi → + → Foto makanan**, pilih foto dan tekan **Analisis foto**. FORMA mengirim salinan JPEG yang diperkecil tanpa metadata kamera ke OpenRouter dan penyedia model ketika analisis diminta. Jurnal menyimpan pilihan makanan dan takaran setelah pengguna mengonfirmasi.
+- Dari **Nutrisi → + → Foto makanan**, tekan **Ambil foto** untuk meminta kamera belakang di HP yang mendukung, atau **Pilih dari galeri** untuk memakai foto yang ada. Periksa pratinjau dan tekan **Analisis foto**. FORMA mengirim salinan JPEG yang diperkecil tanpa metadata kamera ke OpenRouter dan penyedia model ketika analisis diminta. Jurnal menyimpan pilihan makanan dan takaran setelah pengguna mengonfirmasi.
 - Ling 3.2 Flash `:free` mencocokkan isi foto dengan katalog bawaan dan menyebut bahan yang masih meragukan. FORMA mengabaikan nomor yang tidak ada dalam katalog dan membuang komponen ganda yang sudah tercakup di menu gabungan. Nilai gizi dihitung dari katalog untuk takaran yang dipilih pengguna. Pengguna bisa melengkapi atau memperbaiki saran memakai formulir **Susun sekali makan**.
 - Di Vercel, simpan `OPENROUTER_API_KEY` sebagai **Secret** di lingkungan **Production**. Isi `FORMA_PHOTO_EMAIL` dengan email masuk FORMA untuk pemilik uji coba, lalu deploy ulang. Kedua nilai dibaca di server. Biaya model dibatasi ke tarif nol dan pemilihan manual tetap tersedia saat layanan foto mencapai kuota.
 - Skenario browser foto berjalan dengan `FORMA_TEST_PHOTO_EMAIL` yang sama dengan `FORMA_PHOTO_EMAIL` pada tumpukan uji baru. Jalankan server uji dengan `OPENROUTER_API_KEY=forma-offline-test` dan preload `tests/e2e/stub-openrouter.mjs` melalui `NODE_OPTIONS=--import=<absolute-path>`. Stub khusus pengujian memeriksa kontrak OpenRouter, sedangkan akun, katalog, pencatatan, dan ekspor tetap memakai alur aplikasi dan database uji.
